@@ -15,11 +15,7 @@ Kullanım ve kısayollar [BENIOKU.txt](BENIOKU.txt) dosyasında.
 
 Her `main` push'unda GitHub Actions Windows sürümünü derler: **Actions → Windows → son çalıştırma → Artifacts → Kesit-Windows**. İçinde kurulum (`Kesit-…-kurulum.exe`) ve taşınabilir zip var.
 
-`v2.0.1` gibi bir etiket push'lanınca aynı dosyalar **Releases** sayfasına da konur:
-
-```
-git tag v2.0.1 && git push origin v2.0.1
-```
+Yeni sürüm yayınlamak için GitHub'da **Releases → Draft a new release** aç, bir etiket yaz (ör. `v2.0.1`) ve yayınla. Kurulum ve zip birkaç dakika içinde sürüme eklenir. `git tag v2.0.1 && git push origin v2.0.1` de aynı işi yapar.
 
 ## Yapı
 

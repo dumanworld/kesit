@@ -5,7 +5,13 @@ on:
     branches: [main]
     tags: ['v*']
   pull_request:
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Dosyaların ekleneceği sürümün etiketi (boş bırakılırsa yalnızca derler)'
+        required: false
 
 permissions:
   contents: write
@@ -81,9 +87,13 @@ jobs:
             dist/*.zip
             dist/*.exe
           if-no-files-found: error
-      - name: Sürüm yayınla
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Sürüme ekle
+        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
         shell: pwsh
-        run: gh release create "${{ github.ref_name }}" dist/*.zip dist/*.exe --title "Kesit ${{ github.ref_name }}" --generate-notes
+        run: |
+          gh release view "$env:TAG" *> $null
+          if ($LASTEXITCODE -ne 0) { gh release create "$env:TAG" --title "Kesit $env:TAG" --generate-notes }
+          gh release upload "$env:TAG" (Get-ChildItem dist/*.zip, dist/*.exe).FullName --clobber
