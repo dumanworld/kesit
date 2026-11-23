@@ -231,15 +231,19 @@
   // ---- Sürükle bırak (dosya yolu yalnızca yerel olaydan gelir) ----
   T.event.listen('tauri://drag-enter', () => document.body.classList.add('dragging'));
   T.event.listen('tauri://drag-leave', () => document.body.classList.remove('dragging'));
+  const IMAGE_EXT = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']);
   T.event.listen('tauri://drag-drop', (e) => {
     document.body.classList.remove('dragging');
-    const paths = (e.payload && e.payload.paths) || [];
-    if (paths[0]) emit('open-file', paths[0]);
+    const p = ((e.payload && e.payload.paths) || [])[0];
+    if (!p) return;
+    emit(IMAGE_EXT.has(P.extname(p).toLowerCase()) ? 'open-image' : 'open-file', p);
   });
   T.event.listen('open-file', (e) => { if (e.payload) emit('open-file', e.payload); });
 
   // ---- Kapanırken bekleyen yedeği Geri Dönüşüm Kutusu'na gönder ----
-  appWindow.onCloseRequested(async () => {
+  let beforeClose = null; // arayüz: kaydedilmemiş değişiklikleri sorar, false dönerse kapanmaz
+  appWindow.onCloseRequested(async (event) => {
+    if (beforeClose && !(await beforeClose())) { event.preventDefault(); return; }
     if (exportJob) await kill(exportJob);
     if (proxyJob) await kill(proxyJob);
     if (pendingBackup) await commitBackup();
@@ -336,6 +340,21 @@
     pathForFile: () => '',
 
     onOpenFile: on('open-file'),
+    onOpenImage: on('open-image'),
+    onBeforeClose: (fn) => { beforeClose = fn; },
+    pickImage: () => invoke('pick_image'),
+    readImage: async (p) => {
+      const r = await fetch(fileUrl(p));
+      if (!r.ok) throw new Error('Görsel okunamadı');
+      return r.blob();
+    },
+    checkUpdate: () => invoke('update_check'),
+    installUpdate: async (onProgress) => {
+      const ch = new Channel();
+      ch.onmessage = (p) => onProgress && onProgress(p);
+      try { await invoke('update_install', { onProgress: ch }); return { ok: true }; }
+      catch (e) { return { ok: false, error: `İnternet bağlantını kontrol edip tekrar dene. (Ayrıntı: ${String(e).slice(0, 140)})` }; }
+    },
     onZoomChanged: on('zoom-changed'),
     getZoom: async () => { await settingsReady; return settings.zoom || 1; },
     zoomStep: async (step) => { await settingsReady; return applyZoom(step === 0 ? 1 : (settings.zoom || 1) + step * 0.1, true); },

@@ -24,7 +24,7 @@
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13L12.5 3.5M7 3.5h5.5V9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Ok</button>
         <button type="button" class="tool" data-tool="ellipse" aria-pressed="false" title="Daire çiz: sürükle, Shift ile tam daire">
           <svg viewBox="0 0 16 16" aria-hidden="true"><ellipse cx="8" cy="8" rx="5.5" ry="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Daire</button>
-        <button type="button" class="tool" id="btnPaste" title="Panodaki görseli yuvarlak çerçevede ekle (Ctrl+V)">
+        <button type="button" class="tool" id="btnPaste" title="Bilgisayardan görsel ekle. Kopyaladığın görseli Ctrl+V ile de yapıştırabilirsin">
           <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 11.5l2.5-3 2 2 1.5-1.5 1.5 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Görsel</button>
       </div>
       <button type="button" class="linkbtn" id="btnCropReset" hidden>Sıfırla</button>
@@ -145,6 +145,20 @@
       <div class="modal-row">
         <span id="exPct">%0</span>
         <button id="btnCancel" class="btn quiet" type="button">İptal et</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="askModal" hidden>
+    <div class="modal-card" role="alertdialog" aria-modal="true" aria-labelledby="askTitle" aria-describedby="askText">
+      <strong id="askTitle">Değişiklikler kaydedilsin mi?</strong>
+      <p id="askText"></p>
+      <div class="modal-row ask-row">
+        <button id="askDiscard" class="btn quiet" type="button">Kaydetme</button>
+        <span class="ask-right">
+          <button id="askCancel" class="btn quiet" type="button">Vazgeç</button>
+          <button id="askSave" class="btn primary" type="button">Kaydet</button>
+        </span>
       </div>
     </div>
   </div>

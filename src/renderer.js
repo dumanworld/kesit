@@ -111,9 +111,48 @@
 
   // ---------- Dosya açma ----------
   async function openDialog() {
-    if (state.exporting) return;
+    if (state.exporting || asking) return;
     const p = await api.openDialog();
-    if (p) openFile(p);
+    if (p) requestOpen(p);
+  }
+
+  // ---------- Kaydedilmemiş değişiklikler ----------
+  // Başka dosya açılırken ya da pencere kapanırken sorar. Sonuç: devam edilsin mi?
+  let asking = null; // açık sorunun çözücüsü
+  function askSave() {
+    return new Promise((resolve) => {
+      const name = (state.file || '').split(/[\\/]/).pop();
+      $('askText').textContent = `"${name}" üzerindeki değişiklikler kaydedilmedi. Kaydet, orijinal dosyanın üzerine yazar.`;
+      const before = document.activeElement;
+      $('askModal').hidden = false;
+      setBackgroundInert(true);
+      $('askSave').focus();
+      asking = (choice) => {
+        asking = null;
+        $('askModal').hidden = true;
+        setBackgroundInert(false);
+        if (choice === 'cancel' && before && document.contains(before)) before.focus({ preventScroll: true });
+        resolve(choice);
+      };
+    });
+  }
+  $('askSave').addEventListener('click', () => asking && asking('save'));
+  $('askDiscard').addEventListener('click', () => asking && asking('discard'));
+  $('askCancel').addEventListener('click', () => asking && asking('cancel'));
+  $('askModal').addEventListener('pointerdown', (e) => { if (e.target === e.currentTarget && asking) asking('cancel'); });
+
+  async function confirmLeave() {
+    if (asking) return false;
+    if (state.exporting) { toast('Kaydetme sürüyor. Bitmesini bekle ya da iptal et'); return false; }
+    if (!hasEdits()) return true;
+    v.pause();
+    const choice = await askSave();
+    if (choice === 'cancel') return false;
+    if (choice === 'save') return !!(await doExport(true));
+    return true;
+  }
+  async function requestOpen(file) {
+    if (file && (await confirmLeave())) openFile(file);
   }
 
   async function openFile(file) {
@@ -919,7 +958,19 @@
   function clearAnnos() { state.annos = []; state.sel = null; state.adrag = null; if (state.tool) setTool(state.tool); drawAnnos(); }
 
   document.querySelectorAll('.tool[data-tool]').forEach((b) => b.addEventListener('click', (e) => { if (e.detail > 0) b.blur(); setTool(b.dataset.tool); }));
-  $('btnPaste').addEventListener('click', (e) => { if (e.detail > 0) e.currentTarget.blur(); pasteImage(); });
+  // Bilgisayardan görsel: Görsel düğmesi ya da görsel dosyasını pencereye bırakmak
+  async function addImageFile(path) {
+    if (state.exporting) return;
+    if (!state.info) { toast('Görsel eklemek için önce bir video aç', 'error'); return; }
+    try { addImage(await blobToDataUrl(await api.readImage(path))); }
+    catch (_) { toast('Görsel açılamadı. PNG, JPG ya da WebP bir dosya dene', 'error'); }
+  }
+  async function pickImage() {
+    if (!state.info || state.exporting) return;
+    const p = await api.pickImage();
+    if (p) addImageFile(p);
+  }
+  $('btnPaste').addEventListener('click', (e) => { if (e.detail > 0) e.currentTarget.blur(); pickImage(); });
 
   // Videonun üzerindeki basışlar: önce çizim katmanı bakar (yakalama evresi); işi yoksa kadraja / oynatmaya geçer.
   el.viewport.addEventListener('pointerdown', (e) => {
@@ -1126,6 +1177,8 @@
     el.exBar.style.transform = 'scaleX(0)';
     el.exPct.textContent = '%0';
     el.exLabel.textContent = 'Hazırlanıyor';
+    $('exTitle').textContent = 'Kaydediliyor';
+    el.btnCancel.hidden = false;
     focusBeforeSave = document.activeElement;
     el.exportModal.hidden = false;
     setBackgroundInert(true);
@@ -1154,7 +1207,7 @@
       } else {
         toast(`Kaydedilemedi. ${r.error}`, 'error');
       }
-      return;
+      return !!r.ok;
     }
     if (r.ok) {
       const name = output.split(/[\\/]/).pop();
@@ -1167,6 +1220,7 @@
     } else {
       toast(`Kaydedilemedi. ${r.error}`, 'error');
     }
+    return !!r.ok;
   }
   api.onExportProgress(({ p, label }) => {
     const n = Math.round(clamp(p, 0, 1) * 100);
@@ -1276,6 +1330,11 @@
     const ctrl = e.ctrlKey || e.metaKey;
     const k = (e.key || '').toLocaleLowerCase('tr');
 
+    if (asking) { // soru açıkken yalnızca pencerenin düğmeleri çalışır
+      if (e.key === 'Escape') { e.preventDefault(); asking('cancel'); }
+      return;
+    }
+    if (updating) { e.preventDefault(); return; }
     if (ctrl && (k === 'o' || e.code === 'KeyO')) { e.preventDefault(); openDialog(); return; }
     // Yakınlaştırma (yazı yazarken de çalışır)
     if (ctrl && !e.altKey) {
@@ -1345,10 +1404,51 @@
   ro.observe(el.viewport);
   ro.observe(el.track);
 
-  api.onOpenFile((p) => openFile(p));
+  api.onOpenFile((p) => requestOpen(p));
+  api.onOpenImage((p) => addImageFile(p));
+  api.onBeforeClose(() => confirmLeave());
   api.onZoomChanged((z) => toast(`Yakınlaştırma %${Math.round(z * 100)}`, 'ok', [], 1600));
   api.initialFile().then((p) => { if (p) openFile(p); });
 
+  // ---------- Güncelleme ----------
+  let updating = false;
+  async function checkUpdate() {
+    const u = await api.checkUpdate().catch(() => null);
+    if (!u || updating) return;
+    toast(`Kesit ${u.version} hazır`, 'ok', [
+      { label: 'Güncelle', primary: true, fn: installUpdate },
+      { label: 'Sonra', fn: () => hideToast('closed') }
+    ], 30000);
+  }
+  async function installUpdate() {
+    hideToast('update');
+    if (updating || !(await confirmLeave())) return;
+    updating = true;
+    await api.commitSave().catch(() => {});
+    cancelPreview();
+    v.pause();
+    $('exTitle').textContent = 'Güncelleniyor';
+    el.exLabel.textContent = 'İndiriliyor';
+    el.exBar.style.transform = 'scaleX(0)';
+    el.exPct.textContent = '%0';
+    el.btnCancel.hidden = true;
+    el.exportModal.hidden = false;
+    setBackgroundInert(true);
+    const r = await api.installUpdate((p) => {
+      const n = Math.round(clamp(p, 0, 1) * 100);
+      el.exBar.style.transform = `scaleX(${n / 100})`;
+      el.exPct.textContent = `%${n}`;
+      if (n >= 100) el.exLabel.textContent = 'Kuruluyor, Kesit yeniden açılacak';
+    });
+    // Windows'ta kurulum başlayınca uygulama kapanır; buraya yalnızca hata olursa gelinir.
+    updating = false;
+    el.exportModal.hidden = true;
+    el.btnCancel.hidden = false;
+    setBackgroundInert(false);
+    if (!r.ok) toast(`Güncellenemedi. ${r.error}`, 'error');
+  }
+  setTimeout(checkUpdate, 4000);
+
   // Test kancası (yalnızca geliştirme sırasında kullanılır)
-  window.__kesit = { state, openFile, setIn, setOut, seekTo, setRatio };
+  window.__kesit = { state, openFile, requestOpen, addImageFile, setIn, setOut, seekTo, setRatio };
 })();

@@ -18,14 +18,20 @@ NASIL KULLANILIR
    üstündeki satırdan hazır oran seç: 9:16 (Reels), 4:5 (Gönderi), 1:1, 16:9. Çerçeveyi sürükleyerek
    konumla, kenar ve köşelerinden boyutlandır. Çift tık sıfırlar.
    Çizim: üstteki "Ok" ya da "Daire"yi seçip videonun üzerinde sürükle (Shift ile
-   tam daire). Bir görseli kopyalayıp Ctrl+V'ye basınca (ya da "Görsel"e tıklayınca)
-   kırmızı çerçeveli yuvarlak olarak eklenir. Çizimleri sürükleyerek taşı,
+   tam daire). "Görsel" ile bilgisayardan bir görsel seç, görsel dosyasını pencereye
+   sürükle ya da kopyaladığın görseli Ctrl+V ile yapıştır: kırmızı çerçeveli
+   yuvarlak olarak eklenir. Çizimleri sürükleyerek taşı,
    tutamaçlardan boyutlandır, Delete ya da × ile sil. Kaydederken videoya işlenir.
 4. Alt çubukta "Tut" seçili kısmı kaydeder, "Çıkar" seçili kısmı silip kalan
    parçaları birleştirir.
 5. Kaydet (Ctrl+S) orijinal dosyanın üzerine yazar. Çıkan bildirimdeki
    "Geri al" ile hemen geri dönebilirsin; bildirim kapanınca eski hali Geri
    Dönüşüm Kutusu'na gider. Yeni bir dosya için Farklı kaydet (Ctrl+Shift+S).
+   Kaydetmeden başka bir video açarsan ya da pencereyi kapatırsan Kesit sorar.
+
+GÜNCELLEME
+Kesit açılınca yeni sürüm olup olmadığına bakar. Varsa altta "Güncelle" çıkar;
+tıklayınca indirir, kurar ve yeniden açılır.
 
 KISAYOLLAR
 Boşluk           oynat / durdur

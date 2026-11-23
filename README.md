@@ -4,18 +4,28 @@ Windows için hızlı video kesme ve kırpma uygulaması. Videoya sağ tıkla, "
 
 - Kesme: seçili kısmı tut ya da çıkar (kalan parçalar birleştirilir)
 - Kırpma: serbest ya da 9:16, 4:5, 1:1, 16:9
-- Çizim: ok, daire ve panodan yapıştırılan görsel (kırmızı çerçeveli yuvarlak)
+- Çizim: ok, daire ve görsel (bilgisayardan, sürükle bırak ya da Ctrl+V; kırmızı çerçeveli yuvarlak)
 - Kaydet orijinalin üzerine yazar ve geri alınabilir; Farklı kaydet yeni dosya açar
 - Hassas mod (H.264 MP4, iPhone HDR'yi SDR'ye çevirir) ya da hızlı ve kayıpsız mod
 - Ctrl+Z / Ctrl+Y ile düzenlemeleri geri al ve yinele
+- Kaydedilmemiş değişiklik varken başka dosya açınca ya da kapatınca sorar
+- Kendini günceller
 
 Kullanım ve kısayollar [BENIOKU.txt](BENIOKU.txt) dosyasında.
 
 ## İndirme
 
-Her `main` push'unda GitHub Actions Windows sürümünü derler: **Actions → Windows → son çalıştırma → Artifacts → Kesit-Windows**. İçinde kurulum (`Kesit-…-kurulum.exe`) ve taşınabilir zip var.
+**[Son sürümü indir](https://github.com/dumanworld/kesit/releases/latest)**: `Kesit-…-kurulum.exe` (önerilen) ya da taşınabilir zip.
 
-Yeni sürüm yayınlamak için GitHub'da **Releases → Draft a new release** aç, bir etiket yaz (ör. `v2.0.1`) ve yayınla. Kurulum ve zip birkaç dakika içinde sürüme eklenir. `git tag v2.0.1 && git push origin v2.0.1` de aynı işi yapar.
+## Sürüm yayınlama
+
+1. GitHub'da **Releases → Draft a new release** aç.
+2. **Choose a tag** kutusuna bir öncekinden büyük bir sürüm yaz, ör. `v1.2.0`. Uygulamanın sürüm numarası bu etiketten alınır.
+3. İstersen notları yaz ve **Publish release**'e bas.
+
+Birkaç dakika içinde kurulum, zip ve `latest.json` sürüme eklenir. Kurulu Kesit'ler bir sonraki açılışta yeni sürümü görür.
+
+Güncellemeler imzalıdır. İmza anahtarı repo ayarlarında `TAURI_SIGNING_PRIVATE_KEY` secret'ı olarak durur; açık anahtar `src-tauri/tauri.conf.json` içindedir. Anahtar kaybolursa kurulu uygulamalar yeni sürümleri kabul etmez, yedeğini sakla.
 
 ## Yapı
 

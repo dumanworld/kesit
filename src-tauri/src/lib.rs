@@ -16,6 +16,7 @@ use tauri::ipc::Channel;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
+use tauri_plugin_updater::UpdaterExt;
 
 const VIDEO_EXT: &[&str] = &[
     "mp4", "mov", "m4v", "mkv", "webm", "avi", "mts", "m2ts", "ts", "3gp", "wmv", "flv", "mpg", "mpeg",
@@ -352,6 +353,26 @@ async fn pick_video(app: AppHandle) -> Option<String> {
 }
 
 #[tauri::command]
+async fn pick_image(app: AppHandle) -> Option<String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut d = app
+            .dialog()
+            .file()
+            .set_title("Görsel ekle")
+            .add_filter("Görseller", &["png", "jpg", "jpeg", "webp", "gif", "bmp"]);
+        if let Some(w) = app.get_webview_window("main") {
+            d = d.set_parent(&w);
+        }
+        d.blocking_pick_file()
+            .and_then(|f| f.into_path().ok())
+            .map(|p| p.to_string_lossy().to_string())
+    })
+    .await
+    .ok()
+    .flatten()
+}
+
+#[tauri::command]
 async fn pick_save(app: AppHandle, title: String, default_path: String, filter_name: String, ext: String) -> Option<String> {
     tauri::async_runtime::spawn_blocking(move || {
         let p = PathBuf::from(&default_path);
@@ -404,6 +425,47 @@ fn set_settings(app: AppHandle, value: serde_json::Value) -> Result<(), String> 
 #[tauri::command]
 fn set_zoom(window: tauri::WebviewWindow, zoom: f64) -> Result<(), String> {
     window.set_zoom(zoom).map_err(|e| e.to_string())
+}
+
+// ---------------- Güncelleme ----------------
+// GitHub'daki son sürümün latest.json dosyasına bakar; imzası doğrulanan kurulumu indirip çalıştırır.
+
+#[derive(Default)]
+struct PendingUpdate(Mutex<Option<tauri_plugin_updater::Update>>);
+
+#[derive(Serialize)]
+struct UpdateInfo {
+    version: String,
+    notes: Option<String>,
+}
+
+#[tauri::command]
+async fn update_check(app: AppHandle, pending: State<'_, PendingUpdate>) -> Result<Option<UpdateInfo>, String> {
+    if cfg!(debug_assertions) || std::env::var_os("KESIT_GUNCELLEME_YOK").is_some() {
+        return Ok(None);
+    }
+    let update = app.updater().map_err(|e| e.to_string())?.check().await.map_err(|e| e.to_string())?;
+    let info = update.as_ref().map(|u| UpdateInfo { version: u.version.clone(), notes: u.body.clone() });
+    *pending.0.lock().unwrap() = update;
+    Ok(info)
+}
+
+#[tauri::command]
+async fn update_install(pending: State<'_, PendingUpdate>, on_progress: Channel<f64>) -> Result<(), String> {
+    let update = pending.0.lock().unwrap().take().ok_or("Güncelleme bilgisi bulunamadı")?;
+    let mut got: u64 = 0;
+    update
+        .download_and_install(
+            |chunk, total| {
+                got += chunk as u64;
+                if let Some(t) = total.filter(|t| *t > 0) {
+                    let _ = on_progress.send(got as f64 / t as f64);
+                }
+            },
+            || {},
+        )
+        .await
+        .map_err(|e| e.to_string())
 }
 
 // ---------------- Sağ tık menüsü (Windows) ----------------
@@ -486,6 +548,8 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(PendingUpdate::default())
         .on_page_load(|webview, payload| {
             if !cfg!(debug_assertions) || payload.event() != tauri::webview::PageLoadEvent::Finished {
                 return;
@@ -514,7 +578,7 @@ pub fn run() {
             ff_run, ff_kill, ff_capture,
             fs_exists, fs_stat, fs_write_base64, fs_write_text, fs_rename, fs_remove, fs_remove_dir, fs_mkdtemp, temp_root,
             trash_item, set_hidden, reveal, open_path,
-            initial_file, pick_video, pick_save,
+            initial_file, pick_video, pick_image, pick_save, update_check, update_install,
             get_settings, set_settings, set_zoom, selftest_report
         ])
         .build(tauri::generate_context!())

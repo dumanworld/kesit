@@ -483,6 +483,9 @@ input:disabled { opacity: .45; }
 .modal-card strong { font-size: 13px; font-weight: 500; }
 .modal-card p { margin: 2px 0 16px; color: var(--text-2); font-size: 12px; }
 .modal-row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+.ask-row { margin-top: 4px; }
+.ask-right { display: flex; gap: 8px; }
+#askText { overflow-wrap: anywhere; }
 #exPct { font-size: 16px; font-weight: 500; font-variant-numeric: tabular-nums; }
 
 .toast {

@@ -154,6 +154,44 @@
       await ok('önizleme kopyası oynatılabiliyor', await until(() => v.readyState >= 2, 10000), v.readyState);
     }
 
+    // --- Bilgisayardan görsel ---
+    await K.openFile(work('land.mp4'));
+    await until(() => K.state.file && K.state.file.endsWith('land.mp4') && K.state.annos.length === 0, 5000);
+    await K.addImageFile(media('overlay.png'));
+    await ok('bilgisayardan görsel eklendi', K.state.annos.length === 1 && K.state.annos[0].type === 'image' && /^data:image\/png/.test(K.state.annos[0].src));
+
+    // --- Kaydedilmemiş değişiklik sorusu ---
+    await copy(media('noaudio.mp4'), work('ikinci.mp4'));
+    const askOpen = () => !document.getElementById('askModal').hidden;
+    let pending = K.requestOpen(work('ikinci.mp4'));
+    await ok('başka dosya açarken soruyor', await until(askOpen, 3000) && /land\.mp4/.test(document.getElementById('askText').textContent));
+    document.getElementById('askCancel').click();
+    await pending;
+    await ok('Vazgeç: dosya ve değişiklik yerinde', K.state.file.endsWith('land.mp4') && K.state.annos.length === 1 && !askOpen());
+    pending = K.requestOpen(work('ikinci.mp4'));
+    await until(askOpen, 3000);
+    document.getElementById('askDiscard').click();
+    await pending;
+    await until(() => K.state.file && K.state.file.endsWith('ikinci.mp4'), 5000);
+    const land2 = await api.probe(work('land.mp4'));
+    await ok('Kaydetme: yeni dosya açıldı, eskisi değişmedi', K.state.file.endsWith('ikinci.mp4') && land2.ok && Math.abs(land2.info.duration - 10) < 0.1);
+    pending = K.requestOpen(work('land.mp4'));
+    await sleep(300);
+    await ok('değişiklik yoksa sormuyor', !askOpen());
+    await pending;
+    await until(() => K.state.file && K.state.file.endsWith('land.mp4'), 5000);
+    K.setIn(0); K.setOut(5);
+    await sleep(200);
+    pending = K.requestOpen(work('ikinci.mp4'));
+    await until(askOpen, 3000);
+    document.getElementById('askSave').click();
+    await pending;
+    await until(() => K.state.file && K.state.file.endsWith('ikinci.mp4'), 30000);
+    const land3 = await api.probe(work('land.mp4'));
+    await ok('Kaydet: önce kaydetti, sonra açtı', K.state.file.endsWith('ikinci.mp4') && land3.ok && Math.abs(land3.info.duration - 5) < 0.15, land3.ok && land3.info.duration);
+    await api.commitSave();
+    await ok('geliştirme sürümünde güncelleme denetimi kapalı', (await api.checkUpdate()) === null);
+
     // --- Yakınlaştırma ---
     const z = await api.zoomStep(1);
     await ok('yakınlaştırma', Math.abs(z - 1.1) < 0.01 && Math.abs((await api.getZoom()) - 1.1) < 0.01, z);
