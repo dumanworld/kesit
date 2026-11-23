@@ -1,6 +1,6 @@
 [package]
 name = "kesit"
-version = "1.1.0"
+version = "1.1.1"
 description = "Kesit: hızlı video kesme ve kırpma"
 edition = "2021"
 

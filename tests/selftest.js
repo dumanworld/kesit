@@ -190,6 +190,25 @@
     const land3 = await api.probe(work('land.mp4'));
     await ok('Kaydet: önce kaydetti, sonra açtı', K.state.file.endsWith('ikinci.mp4') && land3.ok && Math.abs(land3.info.duration - 5) < 0.15, land3.ok && land3.info.duration);
     await api.commitSave();
+
+    // --- Farklı kaydet sonrası tekrar sormasın ---
+    K.setIn(1);
+    await sleep(200);
+    await ok('değişiklik kaydedilmemiş sayılıyor', K.hasUnsaved());
+    const realSaveDialog = api.saveDialog;
+    api.saveDialog = async () => work('farkli.mp4');
+    document.getElementById('btnSaveAs').click();
+    const savedAs = await until(() => { const t = document.getElementById('toast'); return !t.hidden && /Kaydedildi: farkli\.mp4/.test(t.textContent); }, 30000);
+    api.saveDialog = realSaveDialog;
+    await ok('Farklı kaydet sonrası kaydedilmiş sayılıyor', savedAs && !K.hasUnsaved());
+    K.setIn(1.5);
+    await sleep(200);
+    await ok('yeni değişiklikten sonra yine soruyor', K.hasUnsaved());
+    // Sürükle bırak da aynı soruyu sormalı
+    await window.__TAURI__.event.emit('tauri://drag-drop', { paths: [work('land.mp4')], position: { x: 10, y: 10 } });
+    await ok('sürükle bırakta da soruyor', await until(askOpen, 3000));
+    document.getElementById('askCancel').click();
+    await sleep(200);
     await ok('geliştirme sürümünde güncelleme denetimi kapalı', (await api.checkUpdate()) === null);
 
     // --- Yakınlaştırma ---

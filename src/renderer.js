@@ -144,7 +144,7 @@
   async function confirmLeave() {
     if (asking) return false;
     if (state.exporting) { toast('Kaydetme sürüyor. Bitmesini bekle ya da iptal et'); return false; }
-    if (!hasEdits()) return true;
+    if (!hasUnsaved()) return true;
     v.pause();
     const choice = await askSave();
     if (choice === 'cancel') return false;
@@ -1108,7 +1108,11 @@
     clearTimeout(hist.timer);
     hist.timer = setTimeout(commitHistory, 300);
   }
-  function resetHistory() { clearTimeout(hist.timer); hist.stack = []; hist.i = -1; commitHistory(); }
+  function resetHistory() { clearTimeout(hist.timer); hist.stack = []; hist.i = -1; savedKey = null; commitHistory(); }
+  // Farklı kaydet sonrası aynı düzenleme "kaydedilmiş" sayılır; yeni bir değişiklik yapılana kadar sorulmaz.
+  let savedKey = null;
+  const markSaved = () => { savedKey = snapKey(snapshot()); };
+  const hasUnsaved = () => hasEdits() && snapKey(snapshot()) !== savedKey;
   function restoreSnapshot(s) {
     hist.restoring = true;
     Object.assign(state, {
@@ -1210,6 +1214,7 @@
       return !!r.ok;
     }
     if (r.ok) {
+      markSaved();
       const name = output.split(/[\\/]/).pop();
       toast(`Kaydedildi: ${name}`, 'ok', [
         { label: 'Klasörde göster', fn: () => api.showInFolder(output) },
@@ -1450,5 +1455,5 @@
   setTimeout(checkUpdate, 4000);
 
   // Test kancası (yalnızca geliştirme sırasında kullanılır)
-  window.__kesit = { state, openFile, requestOpen, addImageFile, setIn, setOut, seekTo, setRatio };
+  window.__kesit = { state, openFile, requestOpen, addImageFile, hasUnsaved, setIn, setOut, seekTo, setRatio };
 })();
