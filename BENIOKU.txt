@@ -1,0 +1,61 @@
+﻿Kesit - hızlı video kesme ve kırpma
+
+İki seçenek var:
+- Kesit-kurulum.exe: yönetici izni istemeden kurar, Başlat menüsüne ekler.
+- Taşınabilir zip: klasörü istediğin yere çıkar ve Kesit.exe'yi çalıştır.
+  Kesit.exe ile ffmpeg.exe aynı klasörde durmalı.
+Windows 10 ve 11'de hazır gelen Microsoft Edge WebView2'yi kullanır.
+İlk açılışta Windows "Bilgisayarınız korundu" uyarısı gösterebilir:
+"Ek bilgi" > "Yine de çalıştır" de. (Uygulama imzalı olmadığı için çıkar.)
+
+NASIL KULLANILIR
+1. Videoya sağ tıkla > "Kesit ile düzenle". Ya da videoyu pencereye sürükle
+   veya "Video aç" (Ctrl+O). Windows 11'de seçenek "Diğer seçenekleri göster"
+   altındadır (ya da Shift + sağ tık).
+2. Başlangıç ve bitişi işaretle: I ve O tuşları ya da zaman çizelgesindeki
+   altın renkli tutamaçlar. Süreyi kutulara elle de yazabilirsin (ör. 0:12,5).
+3. Kırpmak için videonun kenarlarından sürükle (serbest kırpma) ya da videonun
+   üstündeki satırdan hazır oran seç: 9:16 (Reels), 4:5 (Gönderi), 1:1, 16:9. Çerçeveyi sürükleyerek
+   konumla, kenar ve köşelerinden boyutlandır. Çift tık sıfırlar.
+   Çizim: üstteki "Ok" ya da "Daire"yi seçip videonun üzerinde sürükle (Shift ile
+   tam daire). Bir görseli kopyalayıp Ctrl+V'ye basınca (ya da "Görsel"e tıklayınca)
+   kırmızı çerçeveli yuvarlak olarak eklenir. Çizimleri sürükleyerek taşı,
+   tutamaçlardan boyutlandır, Delete ya da × ile sil. Kaydederken videoya işlenir.
+4. Alt çubukta "Tut" seçili kısmı kaydeder, "Çıkar" seçili kısmı silip kalan
+   parçaları birleştirir.
+5. Kaydet (Ctrl+S) orijinal dosyanın üzerine yazar. Çıkan bildirimdeki
+   "Geri al" ile hemen geri dönebilirsin; bildirim kapanınca eski hali Geri
+   Dönüşüm Kutusu'na gider. Yeni bir dosya için Farklı kaydet (Ctrl+Shift+S).
+
+KISAYOLLAR
+Boşluk           oynat / durdur
+I / O            başlangıç / bitiş
+Sol / Sağ ok     1 kare
+Shift + ok       1 saniye
+Home / End       başa / sona git
+P                sonucu önizle
+Ctrl+Z / Ctrl+Y  geri al / yinele
+Ctrl+O           video aç
+Ctrl+S           kaydet (üzerine yazar, ardından geri alınabilir)
+Ctrl+Shift+S     farklı kaydet
+Ctrl + / Ctrl -  yakınlaştır / uzaklaştır (Ctrl 0 sıfırlar)
+
+Klavyeyle kadraj: çerçeveye Tab ile gel; oklar taşır (Shift ile 10 px),
+Alt + oklar boyutlandırır. Başlangıç ve bitiş tutamaçlarına da Tab ile
+gelip oklarla kare kare oynatabilirsin.
+
+KALİTE ve SEÇENEKLER (sağ alttaki ⋯ menüsünde)
+Hassas: tam karesinden keser, H.264 MP4 olarak yeniden kodlar (Instagram'a
+uygun). iPhone HDR videoları otomatik olarak normal renklere (SDR) çevrilir.
+Hızlı ve kayıpsız: yeniden kodlamaz, anında biter; kesim noktası en yakın
+anahtar kareye kayabilir. Kadraj ya da küçültme seçiliyken kullanılamaz.
+
+Doğrudan oynatılamayan videolar (ör. bazı HEVC veya ProRes dosyaları) için
+uygulama hafif bir önizleme kopyası hazırlar; dışa aktarma her zaman
+orijinal dosyadan yapılır.
+
+Sağ tık menüsü Kesit'i kaldırınca kendiliğinden silinir. Taşınabilir sürümde
+kaldırmak için Kesit.exe'yi --sag-tik-kaldir parametresiyle bir kez çalıştır.
+
+Video işleme için FFmpeg (GPL v2 veya sonrası) kullanılır. Lisans ve kaynak
+bilgisi ffmpeg-LICENSE.txt ve ffmpeg-README.txt dosyalarında.

@@ -1,0 +1,15 @@
+{
+  "name": "kesit",
+  "private": true,
+  "version": "2.0.0",
+  "description": "Windows için hızlı video kesme ve kırpma uygulaması",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "test": "node tests/core.test.js",
+    "selftest": "bash tests/run-selftest.sh"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}
