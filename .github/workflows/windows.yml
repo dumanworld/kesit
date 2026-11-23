@@ -3,7 +3,6 @@ name: Windows
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
   release:
     types: [published]
@@ -17,8 +16,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: windows-${{ github.ref }}
-  cancel-in-progress: true
+  group: windows-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'release' }}
 
 jobs:
   core-tests:
@@ -54,7 +53,7 @@ jobs:
     runs-on: windows-latest
     env:
       TAG: ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
-      RELEASING: ${{ github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != '' }}
+      RELEASING: ${{ github.event_name == 'release' || inputs.release_tag != '' }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5

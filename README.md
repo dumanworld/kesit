@@ -20,7 +20,7 @@ Kullanım ve kısayollar [BENIOKU.txt](BENIOKU.txt) dosyasında.
 ## Sürüm yayınlama
 
 1. GitHub'da **Releases → Draft a new release** aç.
-2. **Choose a tag** kutusuna bir öncekinden büyük bir sürüm yaz, ör. `v1.2.0`. Uygulamanın sürüm numarası bu etiketten alınır.
+2. **Choose a tag** kutusuna bir öncekinden büyük sürümü üç parça halinde yaz, ör. `v1.2.0`. Uygulamanın sürüm numarası bu etiketten alınır; `v1` gibi eksik yazılırsa `src-tauri/tauri.conf.json`'daki numara kullanılır.
 3. İstersen notları yaz ve **Publish release**'e bas.
 
 Birkaç dakika içinde kurulum, zip ve `latest.json` sürüme eklenir. Kurulu Kesit'ler bir sonraki açılışta yeni sürümü görür.
