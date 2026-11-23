@@ -18,7 +18,8 @@
     ruler: $('ruler'), track: $('track'), strip: $('strip'), shadeL: $('shadeL'), shadeR: $('shadeR'),
     sel: $('sel'), hIn: $('hIn'), hOut: $('hOut'), playhead: $('playhead'),
     exportModal: $('exportModal'), exLabel: $('exLabel'), exBar: $('exBar'), exPct: $('exPct'), btnCancel: $('btnCancel'),
-    toast: $('toast'), toastText: $('toastText'), toastActions: $('toastActions'), toastClose: $('toastClose')
+    toast: $('toast'), toastText: $('toastText'), toastActions: $('toastActions'), toastClose: $('toastClose'),
+    btnAppMenu: $('btnAppMenu'), appMenu: $('appMenu')
   };
   const v = el.video;
 
@@ -1102,13 +1103,21 @@
     hist.stack.push({ s, k });
     if (hist.stack.length > 100) hist.stack.shift();
     hist.i = hist.stack.length - 1;
+    renderHistoryButtons();
   }
   function scheduleCommit() {
     if (hist.restoring || state.drag || state.cropDrag || state.adrag) return;
     clearTimeout(hist.timer);
     hist.timer = setTimeout(commitHistory, 300);
+    renderHistoryButtons();
   }
-  function resetHistory() { clearTimeout(hist.timer); hist.stack = []; hist.i = -1; savedKey = null; commitHistory(); }
+  function resetHistory() { clearTimeout(hist.timer); hist.timer = null; hist.stack = []; hist.i = -1; savedKey = null; commitHistory(); renderHistoryButtons(); }
+  const canUndo = () => !!state.info && (hist.i > 0 || (!!hist.timer && hist.i >= 0 && snapKey(snapshot()) !== hist.stack[hist.i].k));
+  const canRedo = () => !!state.info && hist.i < hist.stack.length - 1;
+  function renderHistoryButtons() {
+    $('btnUndo').disabled = !canUndo();
+    $('btnRedo').disabled = !canRedo();
+  }
   // Farklı kaydet sonrası aynı düzenleme "kaydedilmiş" sayılır; yeni bir değişiklik yapılana kadar sorulmaz.
   let savedKey = null;
   const markSaved = () => { savedKey = snapKey(snapshot()); };
@@ -1133,6 +1142,7 @@
     if (hist.i <= 0) { toast('Geri alınacak değişiklik yok', 'ok', [], 1600); return; }
     hist.i--;
     restoreSnapshot(hist.stack[hist.i].s);
+    renderHistoryButtons();
   }
   function redo() {
     if (state.drag || state.cropDrag || state.adrag) return;
@@ -1140,6 +1150,7 @@
     if (hist.i >= hist.stack.length - 1) return;
     hist.i++;
     restoreSnapshot(hist.stack[hist.i].s);
+    renderHistoryButtons();
   }
 
   // ---------- Dışa aktarma ----------
@@ -1340,6 +1351,10 @@
       return;
     }
     if (updating) { e.preventDefault(); return; }
+    if (!el.appMenu.hidden) return; // menü kendi tuşlarını işler
+    if (!$('infoModal').hidden) return;
+    if (e.key === 'F10') { e.preventDefault(); openAppMenu(true); return; }
+    if (ctrl && (k === 'w' || e.code === 'KeyW')) { e.preventDefault(); closeFile(); return; }
     if (ctrl && (k === 'o' || e.code === 'KeyO')) { e.preventDefault(); openDialog(); return; }
     // Yakınlaştırma (yazı yazarken de çalışır)
     if (ctrl && !e.altKey) {
@@ -1415,10 +1430,234 @@
   api.onZoomChanged((z) => toast(`Yakınlaştırma %${Math.round(z * 100)}`, 'ok', [], 1600));
   api.initialFile().then((p) => { if (p) openFile(p); });
 
+  // ---------- Videoyu kapat ----------
+  async function closeFile() {
+    if (!state.info || !(await confirmLeave())) return;
+    hideToast('closed'); // bekleyen "Geri al" yedeği Geri Dönüşüm Kutusu'na gider
+    state.loadToken++;
+    api.cancelProxy();
+    state.proxyFor = null;
+    clearTimeout(state.loadTimer);
+    cancelPreview();
+    v.pause();
+    v.removeAttribute('src');
+    v.load();
+    hideStageMsg();
+    if (state.tool) setTool(state.tool);
+    clearAnnos();
+    Object.assign(state, { file: null, info: null, duration: 0, inT: 0, outT: 0, now: 0, crop: null, mode: 'keep', proxy: false });
+    el.app.dataset.state = 'empty';
+    el.strip.innerHTML = '';
+    [el.btnPlay, el.inTime, el.outTime, el.btnFrame, el.btnPreview, el.optResize, el.optMute, el.btnExport, el.btnSaveAs,
+      ...document.querySelectorAll('.seg button')].forEach((n) => { n.disabled = true; });
+    el.inTime.value = el.outTime.value = fmtTime(0);
+    el.tNow.textContent = el.tTotal.textContent = fmtTime(0);
+    el.sumDur.textContent = '–'; el.sumSize.textContent = ''; el.sumFlags.textContent = '';
+    $('btnExportLabel').textContent = 'Kaydet';
+    $('fHdr').hidden = true; el.fProxy.hidden = true;
+    document.title = 'Kesit';
+    resetHistory();
+    $('btnOpen2').focus({ preventScroll: true });
+  }
+
+  // ---------- Bilgi penceresi (kısayollar, hakkında) ----------
+  let infoReturn = null;
+  function showInfo(title, body) {
+    $('infoTitle').textContent = title;
+    $('infoBody').replaceChildren(body);
+    infoReturn = document.activeElement;
+    $('infoModal').hidden = false;
+    setBackgroundInert(true);
+    $('infoClose').focus();
+  }
+  function hideInfo() {
+    if ($('infoModal').hidden) return;
+    $('infoModal').hidden = true;
+    setBackgroundInert(false);
+    if (infoReturn && document.contains(infoReturn)) infoReturn.focus({ preventScroll: true });
+  }
+  $('infoClose').addEventListener('click', hideInfo);
+  $('infoModal').addEventListener('pointerdown', (e) => { if (e.target === e.currentTarget) hideInfo(); });
+  $('infoModal').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); hideInfo(); } });
+  function showKeys() {
+    const dl = document.createElement('dl');
+    dl.className = 'mkeys';
+    for (const [what, keys] of [
+      ['Oynat, durdur', 'Boşluk'], ['Başlangıç, bitiş', 'I  O'], ['Bir kare, bir saniye', '←  →  Shift'],
+      ['Başa, sona', 'Home  End'], ['Sonucu önizle', 'P'], ['Geri al, yinele', 'Ctrl Z  Ctrl Y'],
+      ['Video aç, kapat', 'Ctrl O  Ctrl W'], ['Kaydet, farklı kaydet', 'Ctrl S  Ctrl Shift S'],
+      ['Görsel yapıştır', 'Ctrl V'], ['Seçili çizimi sil', 'Delete'], ['Yakınlaştır, uzaklaştır', 'Ctrl +  Ctrl −  Ctrl 0'],
+      ['Menü', 'Alt  F10']
+    ]) {
+      const dt = document.createElement('dt'); dt.textContent = what;
+      const dd = document.createElement('dd');
+      keys.split('  ').forEach((k, i) => { if (i) dd.append(' '); const kb = document.createElement('kbd'); kb.textContent = k; dd.append(kb); });
+      dl.append(dt, dd);
+    }
+    showInfo('Klavye kısayolları', dl);
+  }
+  async function showAbout() {
+    const ver = await api.appVersion().catch(() => '');
+    const box = document.createElement('div');
+    const p1 = document.createElement('p'); p1.textContent = `Sürüm ${ver}. Videoyu hızlıca kes, kırp, üzerine çiz.`;
+    const p2 = document.createElement('p'); p2.textContent = 'Video işleme için FFmpeg (GPL) kullanılır.';
+    box.append(p1, p2);
+    showInfo('Kesit', box);
+  }
+
+  // ---------- Uygulama menüsü (sol üst) ----------
+  const hasFile = () => !!state.info && !state.exporting;
+  const MENU = [
+    { label: 'Dosya', items: [
+      { label: 'Video aç…', keys: 'Ctrl O', run: openDialog },
+      { label: 'Kaydet', keys: 'Ctrl S', run: () => doExport(true), on: () => hasFile() && hasEdits() && outputDuration() >= 0.05 },
+      { label: 'Farklı kaydet…', keys: 'Ctrl Shift S', run: () => doExport(false), on: () => hasFile() && outputDuration() >= 0.05 },
+      { label: 'Bu kareyi PNG olarak kaydet…', run: saveFrame, on: hasFile },
+      '-',
+      { label: 'Klasörde göster', run: () => api.showInFolder(state.file), on: hasFile },
+      { label: 'Videoyu kapat', keys: 'Ctrl W', run: closeFile, on: hasFile },
+      '-',
+      { label: 'Çıkış', keys: 'Alt F4', run: () => api.quit() }
+    ] },
+    { label: 'Düzen', items: [
+      { label: 'Geri al', keys: 'Ctrl Z', run: undo, on: () => hasFile() && canUndo() },
+      { label: 'Yinele', keys: 'Ctrl Y', run: redo, on: () => hasFile() && canRedo() },
+      '-',
+      { label: 'Başlangıcı buraya al', keys: 'I', run: () => setIn(), on: hasFile },
+      { label: 'Bitişi buraya al', keys: 'O', run: () => setOut(), on: hasFile },
+      '-',
+      { label: 'Görsel ekle…', run: pickImage, on: hasFile },
+      { label: 'Görseli yapıştır', keys: 'Ctrl V', run: pasteImage, on: hasFile },
+      { label: 'Kırpmayı sıfırla', run: resetCrop, on: () => hasFile() && !!state.crop },
+      { label: 'Çizimleri temizle', run: () => { clearAnnos(); annosChanged(); }, on: () => hasFile() && state.annos.length > 0 }
+    ] },
+    { label: 'Görünüm', items: [
+      { label: 'Yakınlaştır', keys: 'Ctrl +', run: () => api.zoomStep(1) },
+      { label: 'Uzaklaştır', keys: 'Ctrl −', run: () => api.zoomStep(-1) },
+      { label: 'Gerçek boyut', keys: 'Ctrl 0', run: () => api.zoomStep(0) },
+      '-',
+      { label: 'Sonucu önizle', keys: 'P', run: previewResult, on: hasFile }
+    ] },
+    { label: 'Yardım', items: [
+      { label: 'Klavye kısayolları', run: showKeys },
+      { label: 'Güncellemeleri denetle', run: () => checkUpdate(true) },
+      { label: 'GitHub sayfası', run: () => api.openUrl('https://github.com/dumanworld/kesit') },
+      '-',
+      { label: 'Kesit hakkında', run: showAbout }
+    ] }
+  ];
+  const CHEVRON = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function buildAppMenu() {
+    const root = el.appMenu;
+    root.replaceChildren();
+    for (const group of MENU) {
+      const g = document.createElement('div');
+      g.className = 'am-group';
+      const parent = document.createElement('button');
+      parent.type = 'button'; parent.className = 'mitem am-parent';
+      parent.setAttribute('role', 'menuitem'); parent.setAttribute('aria-haspopup', 'menu'); parent.setAttribute('aria-expanded', 'false');
+      parent.innerHTML = CHEVRON;
+      parent.prepend(group.label);
+      const sub = document.createElement('div');
+      sub.className = 'appmenu am-sub'; sub.setAttribute('role', 'menu'); sub.setAttribute('aria-label', group.label); sub.hidden = true;
+      for (const it of group.items) {
+        if (it === '-') { const sep = document.createElement('div'); sep.className = 'msep'; sep.setAttribute('role', 'separator'); sub.append(sep); continue; }
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'mitem'; b.setAttribute('role', 'menuitem');
+        b.textContent = it.label;
+        if (it.keys) { const k = document.createElement('span'); k.className = 'am-keys'; k.textContent = it.keys; b.append(k); }
+        b.addEventListener('click', () => { closeAppMenu(false); it.run(); });
+        b._item = it;
+        sub.append(b);
+      }
+      parent.addEventListener('click', () => openSub(g, true));
+      parent.addEventListener('pointerenter', () => openSub(g, false));
+      g.append(parent, sub);
+      root.append(g);
+    }
+  }
+  function openSub(g, focusFirst) {
+    for (const other of el.appMenu.querySelectorAll('.am-group')) {
+      const on = other === g;
+      other.querySelector('.am-sub').hidden = !on;
+      other.querySelector('.am-parent').setAttribute('aria-expanded', String(on));
+    }
+    const sub = g.querySelector('.am-sub');
+    sub.querySelectorAll('.mitem').forEach((b) => { b.disabled = !!(b._item.on && !b._item.on()); });
+    if (focusFirst) { const f = sub.querySelector('.mitem:not(:disabled)'); if (f) f.focus(); }
+  }
+  function closeSubs() {
+    el.appMenu.querySelectorAll('.am-sub').forEach((x) => { x.hidden = true; });
+    el.appMenu.querySelectorAll('.am-parent').forEach((x) => x.setAttribute('aria-expanded', 'false'));
+  }
+  function openAppMenu(focusFirst) {
+    if (asking || updating || state.exporting || !$('infoModal').hidden) return;
+    closeMenu(false);
+    if (!el.appMenu.childElementCount) buildAppMenu();
+    closeSubs();
+    el.appMenu.hidden = false;
+    el.btnAppMenu.setAttribute('aria-expanded', 'true');
+    if (focusFirst) el.appMenu.querySelector('.am-parent').focus();
+  }
+  function closeAppMenu(returnFocus) {
+    if (el.appMenu.hidden) return;
+    closeSubs();
+    el.appMenu.hidden = true;
+    el.btnAppMenu.setAttribute('aria-expanded', 'false');
+    if (returnFocus) el.btnAppMenu.focus(); else if (el.appMenu.contains(document.activeElement)) document.activeElement.blur();
+  }
+  el.btnAppMenu.addEventListener('click', (e) => {
+    if (el.appMenu.hidden) openAppMenu(e.detail === 0); else closeAppMenu(e.detail === 0);
+    if (e.detail > 0) el.btnAppMenu.blur();
+  });
+  document.addEventListener('pointerdown', (e) => {
+    if (!el.appMenu.hidden && !e.target.closest('.appmenu-wrap')) closeAppMenu(false);
+  });
+  el.appMenu.addEventListener('keydown', (e) => {
+    const cur = document.activeElement;
+    const inSub = cur && cur.closest('.am-sub');
+    const list = [...(inSub ? inSub : el.appMenu).querySelectorAll(inSub ? '.mitem:not(:disabled)' : '.am-parent')];
+    const i = list.indexOf(cur);
+    const move = (d) => { const n = list[(i + d + list.length) % list.length]; if (n) n.focus(); };
+    if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+    else if (e.key === 'Home') { e.preventDefault(); list[0] && list[0].focus(); }
+    else if (e.key === 'End') { e.preventDefault(); list[list.length - 1] && list[list.length - 1].focus(); }
+    else if (e.key === 'ArrowRight' && !inSub && cur.classList.contains('am-parent')) { e.preventDefault(); openSub(cur.parentElement, true); }
+    else if ((e.key === 'ArrowLeft' || e.key === 'Escape') && inSub) {
+      e.preventDefault(); e.stopPropagation();
+      const g = inSub.parentElement; closeSubs(); g.querySelector('.am-parent').focus();
+    } else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeAppMenu(true); }
+    else if (e.key === 'Tab') { closeAppMenu(false); }
+    else if (e.key.length === 1 && !e.ctrlKey && !e.altKey) {
+      // Harfle atla: "D" Dosya / Düzen arasında gezer
+      const ch = e.key.toLocaleLowerCase('tr');
+      const order = [...list.slice(i + 1), ...list.slice(0, i + 1)];
+      const hit = order.find((b) => b.textContent.trim().toLocaleLowerCase('tr').startsWith(ch));
+      if (hit) { e.preventDefault(); hit.focus(); }
+    }
+  });
+  // Windows alışkanlığı: Alt'a tek başına basıp bırakınca menü açılır
+  let altAlone = false;
+  document.addEventListener('keydown', (e) => { altAlone = e.key === 'Alt' && !e.repeat ? true : (e.key === 'Alt' && altAlone); }, true);
+  document.addEventListener('keyup', (e) => {
+    if (e.key !== 'Alt' || !altAlone) return;
+    altAlone = false;
+    e.preventDefault();
+    if (el.appMenu.hidden) openAppMenu(true); else closeAppMenu(true);
+  });
+  window.addEventListener('blur', () => { altAlone = false; });
+  el.btnUndo = $('btnUndo'); el.btnRedo = $('btnRedo');
+  el.btnUndo.addEventListener('click', (e) => { if (e.detail > 0) e.currentTarget.blur(); undo(); });
+  el.btnRedo.addEventListener('click', (e) => { if (e.detail > 0) e.currentTarget.blur(); redo(); });
+
   // ---------- Güncelleme ----------
   let updating = false;
-  async function checkUpdate() {
-    const u = await api.checkUpdate().catch(() => null);
+  async function checkUpdate(manual) {
+    let u = null;
+    try { u = await api.checkUpdate(); }
+    catch (e) { if (manual) toast(`Güncelleme denetlenemedi. İnternet bağlantını kontrol et. (${String(e).slice(0, 120)})`, 'error'); return; }
+    if (!u && manual) { toast(`Kesit güncel (sürüm ${await api.appVersion().catch(() => '?')})`); return; }
     if (!u || updating) return;
     toast(`Kesit ${u.version} hazır`, 'ok', [
       { label: 'Güncelle', primary: true, fn: installUpdate },
@@ -1452,8 +1691,8 @@
     setBackgroundInert(false);
     if (!r.ok) toast(`Güncellenemedi. ${r.error}`, 'error');
   }
-  setTimeout(checkUpdate, 4000);
+  setTimeout(() => checkUpdate(false), 4000);
 
   // Test kancası (yalnızca geliştirme sırasında kullanılır)
-  window.__kesit = { state, openFile, requestOpen, addImageFile, hasUnsaved, setIn, setOut, seekTo, setRatio };
+  window.__kesit = { state, openFile, requestOpen, addImageFile, hasUnsaved, closeFile, openAppMenu, setIn, setOut, seekTo, setRatio };
 })();

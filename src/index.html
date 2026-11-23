@@ -11,6 +11,23 @@
   <main class="stage" id="stage">
     <!-- Kadraj oranları: videonun üstünde tek satır -->
     <div class="framebar" id="framebar">
+      <div class="appbar">
+        <div class="appmenu-wrap">
+          <button id="btnAppMenu" class="iconbtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="appMenu" aria-label="Menü" title="Menü (Alt)">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h12M4 10h12M4 14h8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+          <div class="appmenu" id="appMenu" role="menu" aria-label="Menü" hidden></div>
+        </div>
+        <span class="history">
+          <button id="btnUndo" class="iconbtn" type="button" aria-label="Geri al" title="Geri al (Ctrl Z)" disabled>
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5L2.5 6.5l3 3M2.5 6.5h7a3.5 3.5 0 0 1 0 7H8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button id="btnRedo" class="iconbtn" type="button" aria-label="Yinele" title="Yinele (Ctrl Y)" disabled>
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 3.5l3 3-3 3M13.5 6.5h-7a3.5 3.5 0 0 0 0 7H8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </span>
+      </div>
+      <div class="fb-center">
       <div class="ratios" role="radiogroup" aria-label="Kadraj">
         <button type="button" role="radio" class="ratio" data-ratio="orig" aria-checked="true" title="Kırpma yok"><i class="shape orig"></i>Orijinal</button>
         <button type="button" role="radio" class="ratio" data-ratio="free" aria-checked="false" title="Elle boyutlandır"><i class="shape free"></i>Serbest</button>
@@ -28,8 +45,11 @@
           <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 11.5l2.5-3 2 2 1.5-1.5 1.5 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Görsel</button>
       </div>
       <button type="button" class="linkbtn" id="btnCropReset" hidden>Sıfırla</button>
+      </div>
+      <div class="fb-right">
       <span class="status" id="fHdr" hidden title="Hassas kaydetmede renkler normal görüntüye (SDR) çevrilir">HDR</span>
       <span class="status" id="fProxy" hidden title="Bu kodek doğrudan oynatılamadığı için hafif bir kopya gösteriliyor. Kaydetme orijinal dosyadan yapılır.">Önizleme kopyası</span>
+      </div>
     </div>
 
     <div class="viewport" id="viewport" title="Tıkla: oynat / durdur. Kırpmak için kenarlardan sürükle">
@@ -160,6 +180,14 @@
           <button id="askSave" class="btn primary" type="button">Kaydet</button>
         </span>
       </div>
+    </div>
+  </div>
+
+  <div class="modal" id="infoModal" hidden>
+    <div class="modal-card info-card" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+      <strong id="infoTitle"></strong>
+      <div id="infoBody"></div>
+      <div class="modal-row"><span></span><button id="infoClose" class="btn quiet" type="button">Kapat</button></div>
     </div>
   </div>
 

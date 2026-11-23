@@ -320,6 +320,14 @@ fn reveal(app: AppHandle, path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn open_url(app: AppHandle, url: String) -> Result<(), String> {
+    if !url.starts_with("https://") {
+        return Err("yalnızca https bağlantıları açılır".into());
+    }
+    app.opener().open_url(&url, None::<&str>).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn open_path(app: AppHandle, path: String) -> Result<(), String> {
     app.opener().open_path(&path, None::<&str>).map_err(|e| e.to_string())
 }
@@ -577,7 +585,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             ff_run, ff_kill, ff_capture,
             fs_exists, fs_stat, fs_write_base64, fs_write_text, fs_rename, fs_remove, fs_remove_dir, fs_mkdtemp, temp_root,
-            trash_item, set_hidden, reveal, open_path,
+            trash_item, set_hidden, reveal, open_path, open_url,
             initial_file, pick_video, pick_image, pick_save, update_check, update_install,
             get_settings, set_settings, set_zoom, selftest_report
         ])

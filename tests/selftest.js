@@ -209,6 +209,28 @@
     await ok('sürükle bırakta da soruyor', await until(askOpen, 3000));
     document.getElementById('askCancel').click();
     await sleep(200);
+
+    // --- Geri al / yinele düğmeleri ---
+    await sleep(400);
+    const bu = document.getElementById('btnUndo'), br = document.getElementById('btnRedo');
+    await ok('geri al düğmesi açık, yinele kapalı', !bu.disabled && br.disabled);
+    bu.click();
+    await ok('geri al düğmesi çalışıyor', Math.abs(K.state.inT - 1) < 0.05 && !br.disabled, K.state.inT);
+    br.click();
+    await ok('yinele düğmesi çalışıyor', Math.abs(K.state.inT - 1.5) < 0.05, K.state.inT);
+
+    // --- Menü ve videoyu kapat ---
+    K.openAppMenu(false);
+    const groups = [...document.querySelectorAll('#appMenu .am-parent')].map((b) => b.textContent.trim());
+    await ok('menü: Dosya, Düzen, Görünüm, Yardım', groups.join(',') === 'Dosya,Düzen,Görünüm,Yardım', groups);
+    document.querySelector('#appMenu .am-parent').click();
+    const closeItem = [...document.querySelectorAll('#appMenu .am-sub .mitem')].find((b) => b.textContent.startsWith('Videoyu kapat'));
+    await ok('Dosya > Videoyu kapat açık', closeItem && !closeItem.disabled);
+    closeItem.click();
+    await ok('kapatırken kaydedilmemiş değişikliği soruyor', await until(askOpen, 3000) && document.getElementById('appMenu').hidden);
+    document.getElementById('askDiscard').click();
+    await ok('video kapandı, boş ekrana döndü', await until(() => document.getElementById('app').dataset.state === 'empty' && !K.state.info && document.title === 'Kesit', 3000));
+    await ok('boşken geri al kapalı', document.getElementById('btnUndo').disabled);
     await ok('geliştirme sürümünde güncelleme denetimi kapalı', (await api.checkUpdate()) === null);
 
     // --- Yakınlaştırma ---

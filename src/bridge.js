@@ -348,6 +348,9 @@
       if (!r.ok) throw new Error('Görsel okunamadı');
       return r.blob();
     },
+    appVersion: () => T.app.getVersion(),
+    quit: () => appWindow.close(),
+    openUrl: (url) => invoke('open_url', { url }).catch(() => {}),
     checkUpdate: () => invoke('update_check'),
     installUpdate: async (onProgress) => {
       const ch = new Channel();

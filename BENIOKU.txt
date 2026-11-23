@@ -33,6 +33,11 @@ GÜNCELLEME
 Kesit açılınca yeni sürüm olup olmadığına bakar. Varsa altta "Güncelle" çıkar;
 tıklayınca indirir, kurar ve yeniden açılır.
 
+MENÜ
+Sol üstteki menüde Dosya (aç, kaydet, kapat), Düzen (geri al, görsel ekle,
+kırpmayı sıfırla), Görünüm ve Yardım (kısayollar, güncelleme) bulunur. Alt ya da
+F10 ile klavyeden açılır. Yanındaki oklar geri al ve yinele.
+
 KISAYOLLAR
 Boşluk           oynat / durdur
 I / O            başlangıç / bitiş
@@ -41,7 +46,7 @@ Shift + ok       1 saniye
 Home / End       başa / sona git
 P                sonucu önizle
 Ctrl+Z / Ctrl+Y  geri al / yinele
-Ctrl+O           video aç
+Ctrl+O / Ctrl+W  video aç / kapat
 Ctrl+S           kaydet (üzerine yazar, ardından geri alınabilir)
 Ctrl+Shift+S     farklı kaydet
 Ctrl + / Ctrl -  yakınlaştır / uzaklaştır (Ctrl 0 sıfırlar)
