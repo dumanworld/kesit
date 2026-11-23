@@ -102,8 +102,18 @@
       r1.ok ? { w: p1.info && p1.info.width, d: p1.info && p1.info.duration } : r1.error);
     await ok('ilerleme bildirildi', lastP >= 0.99, lastP);
     // Çizimin piksel kontrolü: (100,100)+kırpma 480 → kırpılmış karede x≈0..220 kırmızı kenar
-    const px = await invoke('ff_capture', { args: ['-hide_banner', '-ss', '0.5', '-i', out1, '-frames:v', '1', '-vf', 'crop=2:2:20:110,format=rgb24', '-f', 'rawvideo', 'pipe:1'], binary: true });
-    const bytes = Uint8Array.from(atob(px.stdout), (c) => c.charCodeAt(0));
+    // Paketteki küçük ffmpeg'de rawvideo yok: kareyi PNG alıp tuvalde okuyoruz.
+    const px = await invoke('ff_capture', { args: ['-hide_banner', '-ss', '0.5', '-i', out1, '-frames:v', '1', '-c:v', 'png', '-f', 'image2pipe', 'pipe:1'], binary: true });
+    const bytes = await new Promise((res) => {
+      const im = new Image();
+      im.onload = () => {
+        const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+        const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+        res([...g.getImageData(20, 110, 1, 1).data]);
+      };
+      im.onerror = () => res([]);
+      im.src = 'data:image/png;base64,' + px.stdout;
+    });
     await ok('çizim videoya işlendi', bytes[0] > 200 && bytes[1] < 110 && bytes[2] < 110, [...bytes.slice(0, 3)]);
 
     // --- Çıkar modu (hızlı, concat listesi) ---
