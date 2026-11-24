@@ -1140,6 +1140,6 @@ body.dragging .drop-hint { display: flex; }
 }
 :root.mica body { background: transparent; }
 :root.mica .stage, :root.mica .strip, :root.mica .app[data-state="empty"] .strip { background: var(--stage-glass); }
-/* Kopyala ve Kaydet saydam olmaz: asıl işi yapan düğmeler zeminden ayrışsın */
-:root.mica .ctl-right #btnCopy, :root.mica .save-wrap .btn { --btn-bg: #ffffff; --btn-bg-hover: #f9f9f9; --btn-bg-press: #f3f3f3; --btn-hover: #f6f6f6; }
-:root.mica[data-theme="dark"] .ctl-right #btnCopy, :root.mica[data-theme="dark"] .save-wrap .btn { --btn-bg: #2d2d2d; --btn-bg-hover: #323232; --btn-bg-press: #282828; --btn-hover: #323232; }
+/* Kaydet saydam olmaz: asıl işi yapan düğme zeminden ayrışsın */
+:root.mica .save-wrap .btn { --btn-bg: #ffffff; --btn-bg-hover: #f9f9f9; --btn-bg-press: #f3f3f3; --btn-hover: #f6f6f6; }
+:root.mica[data-theme="dark"] .save-wrap .btn { --btn-bg: #2d2d2d; --btn-bg-hover: #323232; --btn-bg-press: #282828; --btn-hover: #323232; }
