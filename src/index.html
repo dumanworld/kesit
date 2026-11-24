@@ -18,7 +18,7 @@
       </div>
     </div>
     <div class="fb-mid">
-      <span class="history">
+      <span class="history" hidden>
         <button id="btnUndo" class="iconbtn" type="button" aria-label="Geri al" title="Geri al (Ctrl Z)" disabled>
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5L2.5 6.5l3 3M2.5 6.5h7a3.5 3.5 0 0 1 0 7H8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
@@ -26,17 +26,66 @@
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 3.5l3 3-3 3M13.5 6.5h-7a3.5 3.5 0 0 0 0 7H8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </span>
-      <span class="vsep" aria-hidden="true"></span>
       <div class="fb-center" inert>
+      <div class="ratio-wrap">
+        <button type="button" class="dropbtn" id="btnRatio" aria-haspopup="true" aria-expanded="false" aria-controls="ratioMenu" title="Kadraj">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 1.5v13.5h13.5M1.5 5h13.5v13.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span id="ratioLabel">Orijinal</span>
+          <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="ratios ratiomenu" id="ratioMenu" role="radiogroup" aria-label="Kadraj" hidden>
+      <button type="button" role="radio" class="ratio" data-ratio="orig" aria-checked="true" title="Kırpma yok"><i class="shape orig"></i>Orijinal</button>
+      <button type="button" role="radio" class="ratio" data-ratio="free" aria-checked="false" title="Elle boyutlandır"><i class="shape free"></i>Serbest</button>
+      <button type="button" role="radio" class="ratio" data-ratio="9:16" aria-checked="false" title="Reels, Story"><i class="shape r916"></i>9:16</button>
+      <button type="button" role="radio" class="ratio" data-ratio="4:5" aria-checked="false" title="Gönderi"><i class="shape r45"></i>4:5</button>
+      <button type="button" role="radio" class="ratio" data-ratio="1:1" aria-checked="false" title="Kare"><i class="shape r11"></i>1:1</button>
+      <button type="button" role="radio" class="ratio" data-ratio="16:9" aria-checked="false" title="Yatay"><i class="shape r169"></i>16:9</button>
+      <div class="msep" role="separator"></div>
+        <button type="button" class="mitem" id="btnCropReset" hidden>Kadrajı sıfırla</button>
+      </div>
+      </div>
+      <span class="vsep" aria-hidden="true"></span>
+      <button type="button" class="modeswitch" id="btnMode" role="switch" aria-checked="false" title="Tut: seçili parça kalır. Çıkar: seçili parça silinir">
+        <span data-m="keep">Tut</span><span data-m="remove">Çıkar</span>
+      </button>
+      <div hidden><div class="seg" role="radiogroup" aria-label="Kesim">
+          <button type="button" role="radio" data-mode="keep" aria-checked="true" title="Başlangıç ile bitiş arası kalır" disabled>Tut</button>
+          <button type="button" role="radio" data-mode="remove" aria-checked="false" title="Başlangıç ile bitiş arası silinir, kalan parçalar birleşir" disabled>Çıkar</button>
+        </div></div>
+      <span class="vsep" aria-hidden="true"></span>
       <div class="tools" role="group" aria-label="Çizim">
-      <button type="button" class="tool" data-tool="arrow" aria-pressed="false" title="Ok çiz: videonun üzerinde sürükle">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13L12.5 3.5M7 3.5h5.5V9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Ok</button>
-      <button type="button" class="tool" data-tool="ellipse" aria-pressed="false" title="Daire çiz: sürükle, Shift ile tam daire">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><ellipse cx="8" cy="8" rx="5.5" ry="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Daire</button>
-      <button type="button" class="tool" id="btnPaste" title="Bilgisayardan görsel ekle. Kopyaladığın görseli Ctrl+V ile de yapıştırabilirsin">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 11.5l2.5-3 2 2 1.5-1.5 1.5 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Görsel</button>
+      <button type="button" class="tool" data-tool="arrow" aria-pressed="false" aria-label="Ok" title="Ok çiz: videonun üzerinde sürükle">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13L12.5 3.5M7 3.5h5.5V9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button type="button" class="tool" data-tool="ellipse" aria-pressed="false" aria-label="Daire" title="Daire çiz: sürükle, Shift ile tam daire">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><ellipse cx="8" cy="8" rx="5.5" ry="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+      <button type="button" class="tool" id="btnPaste" aria-label="Görsel" title="Bilgisayardan görsel ekle. Kopyaladığın görseli Ctrl+V ile de yapıştırabilirsin">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 11.5l2.5-3 2 2 1.5-1.5 1.5 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
     </div>
       </div>
+      <span class="vsep" aria-hidden="true"></span>
+      <div class="menu-wrap">
+          <button id="btnMenu" class="iconbtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu" title="Diğer">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4.5" cy="10" r="1.6" fill="currentColor"/><circle cx="10" cy="10" r="1.6" fill="currentColor"/><circle cx="15.5" cy="10" r="1.6" fill="currentColor"/></svg>
+          </button>
+          <div class="menu" id="menu" role="dialog" aria-label="Diğer seçenekler" hidden>
+            <button type="button" class="mitem" id="mOpen">Video aç <kbd>Ctrl O</kbd></button>
+            <button type="button" class="mitem" id="btnFrame" disabled>Bu kareyi PNG olarak kaydet</button>
+            <button type="button" class="mitem" id="btnPreview" disabled>Sonucu önizle <kbd>P</kbd></button>
+            <div class="msep" role="separator"></div>
+            <label class="mcheck" id="optFastWrap"><input type="checkbox" id="optFast" disabled><span><b>Hızlı ve kayıpsız</b><small id="fastHint">Yeniden kodlamaz; kesim birkaç kare kayabilir</small></span></label>
+            <label class="mcheck" id="optMuteWrap"><input type="checkbox" id="optMute" disabled><span><b>Sesi kaldır</b><small id="muteHint" hidden>Bu videoda ses yok</small></span></label>
+            <label class="mcheck"><input type="checkbox" id="optResize" disabled><span><b>1080 px genişliğe küçült</b><small>Instagram'ın gösterdiği en büyük boyut</small></span></label>
+            <div class="msep" role="separator"></div>
+            <dl class="mkeys">
+              <dt>Oynat</dt><dd><kbd>Boşluk</kbd></dd>
+              <dt>Başlangıç, bitiş</dt><dd><kbd>I</kbd> <kbd>O</kbd></dd>
+              <dt>Kare, saniye</dt><dd><kbd>←</kbd> <kbd>→</kbd> <kbd>Shift</kbd></dd>
+              <dt>Geri al, yinele</dt><dd><kbd>Ctrl Z</kbd> <kbd>Ctrl Y</kbd></dd>
+              <dt>Kaydet, farklı kaydet</dt><dd><kbd>Ctrl S</kbd> <kbd>Ctrl Shift S</kbd></dd>
+              <dt>Yakınlaştır</dt><dd><kbd>Ctrl +</kbd> <kbd>Ctrl −</kbd></dd>
+            </dl>
+          </div>
+        </div>
     </div>
     <div class="fb-right">
     <span class="status" id="fHdr" hidden title="Hassas kaydetmede renkler normal görüntüye (SDR) çevrilir">HDR</span>
@@ -84,17 +133,6 @@
   </main>
 
   <footer class="transport" id="transport">
-    <div class="ratiobar fb-center" inert>
-      <div class="ratios" role="radiogroup" aria-label="Kadraj">
-      <button type="button" role="radio" class="ratio" data-ratio="orig" aria-checked="true" title="Kırpma yok"><i class="shape orig"></i>Orijinal</button>
-      <button type="button" role="radio" class="ratio" data-ratio="free" aria-checked="false" title="Elle boyutlandır"><i class="shape free"></i>Serbest</button>
-      <button type="button" role="radio" class="ratio" data-ratio="9:16" aria-checked="false" title="Reels, Story"><i class="shape r916"></i>9:16</button>
-      <button type="button" role="radio" class="ratio" data-ratio="4:5" aria-checked="false" title="Gönderi"><i class="shape r45"></i>4:5</button>
-      <button type="button" role="radio" class="ratio" data-ratio="1:1" aria-checked="false" title="Kare"><i class="shape r11"></i>1:1</button>
-      <button type="button" role="radio" class="ratio" data-ratio="16:9" aria-checked="false" title="Yatay"><i class="shape r169"></i>16:9</button>
-    </div>
-      <button type="button" class="linkbtn" id="btnCropReset" hidden>Sıfırla</button>
-    </div>
     <div class="timeline" id="timeline">
       <div class="ruler" id="ruler"></div>
       <div class="track" id="track" data-mode="keep">
@@ -121,47 +159,21 @@
       </div>
 
       <div class="ctl-mid">
-        <div class="seg" role="radiogroup" aria-label="Kesim">
-          <button type="button" role="radio" data-mode="keep" aria-checked="true" title="Başlangıç ile bitiş arası kalır" disabled>Tut</button>
-          <button type="button" role="radio" data-mode="remove" aria-checked="false" title="Başlangıç ile bitiş arası silinir, kalan parçalar birleşir" disabled>Çıkar</button>
-        </div>
-        <span class="vsep" aria-hidden="true"></span>
-        <input id="inTime" class="time" type="text" inputmode="decimal" spellcheck="false" aria-label="Başlangıç zamanı" title="Başlangıç (I)" value="0:00.00" disabled>
+        
+        <input id="inTime" hidden class="time" type="text" inputmode="decimal" spellcheck="false" aria-label="Başlangıç zamanı" title="Başlangıç (I)" value="0:00.00" disabled>
         <button id="btnPlay" class="playbtn" type="button" aria-label="Oynat" title="Oynat (Boşluk)" disabled>
         <svg class="i-play" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 3.8v12.4L16 10z" fill="currentColor"/></svg>
         <svg class="i-pause" viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="4" width="3.4" height="12" rx="1" fill="currentColor"/><rect x="11.6" y="4" width="3.4" height="12" rx="1" fill="currentColor"/></svg>
       </button>
-        <input id="outTime" class="time" type="text" inputmode="decimal" spellcheck="false" aria-label="Bitiş zamanı" title="Bitiş (O)" value="0:00.00" disabled>
+        <input id="outTime" hidden class="time" type="text" inputmode="decimal" spellcheck="false" aria-label="Bitiş zamanı" title="Bitiş (O)" value="0:00.00" disabled>
       </div>
 
       <div class="ctl-right save">
-        <div class="menu-wrap">
-          <button id="btnMenu" class="iconbtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu" title="Diğer">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4.5" cy="10" r="1.6" fill="currentColor"/><circle cx="10" cy="10" r="1.6" fill="currentColor"/><circle cx="15.5" cy="10" r="1.6" fill="currentColor"/></svg>
-          </button>
-          <div class="menu" id="menu" role="dialog" aria-label="Diğer seçenekler" hidden>
-            <button type="button" class="mitem" id="mOpen">Video aç <kbd>Ctrl O</kbd></button>
-            <button type="button" class="mitem" id="btnFrame" disabled>Bu kareyi PNG olarak kaydet</button>
-            <button type="button" class="mitem" id="btnPreview" disabled>Sonucu önizle <kbd>P</kbd></button>
-            <div class="msep" role="separator"></div>
-            <label class="mcheck" id="optFastWrap"><input type="checkbox" id="optFast" disabled><span><b>Hızlı ve kayıpsız</b><small id="fastHint">Yeniden kodlamaz; kesim birkaç kare kayabilir</small></span></label>
-            <label class="mcheck" id="optMuteWrap"><input type="checkbox" id="optMute" disabled><span><b>Sesi kaldır</b><small id="muteHint" hidden>Bu videoda ses yok</small></span></label>
-            <label class="mcheck"><input type="checkbox" id="optResize" disabled><span><b>1080 px genişliğe küçült</b><small>Instagram'ın gösterdiği en büyük boyut</small></span></label>
-            <div class="msep" role="separator"></div>
-            <dl class="mkeys">
-              <dt>Oynat</dt><dd><kbd>Boşluk</kbd></dd>
-              <dt>Başlangıç, bitiş</dt><dd><kbd>I</kbd> <kbd>O</kbd></dd>
-              <dt>Kare, saniye</dt><dd><kbd>←</kbd> <kbd>→</kbd> <kbd>Shift</kbd></dd>
-              <dt>Geri al, yinele</dt><dd><kbd>Ctrl Z</kbd> <kbd>Ctrl Y</kbd></dd>
-              <dt>Kaydet, farklı kaydet</dt><dd><kbd>Ctrl S</kbd> <kbd>Ctrl Shift S</kbd></dd>
-              <dt>Yakınlaştır</dt><dd><kbd>Ctrl +</kbd> <kbd>Ctrl −</kbd></dd>
-            </dl>
-          </div>
-        </div>
-        <button id="btnCopy" class="iconbtn" type="button" aria-label="Panoya kopyala" title="Panoya kopyala (Ctrl Shift C)" disabled>
+        
+        <button id="btnSaveAs" class="btn" type="button" title="Yeni dosya olarak kaydet (Ctrl Shift S)" disabled>Farklı kaydet</button>
+        <button id="btnCopy" class="btn primary iconly" type="button" aria-label="Panoya kopyala" title="Panoya kopyala (Ctrl Shift C)" disabled>
           <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 3.5v-.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         </button>
-        <button id="btnSaveAs" class="btn quiet" type="button" title="Yeni dosya olarak kaydet (Ctrl Shift S)" disabled>Farklı kaydet</button>
         <button id="btnExport" class="btn primary" type="button" title="Orijinalin üzerine yazar; hemen ardından geri alabilirsin (Ctrl S)" disabled><span id="btnExportLabel">Kaydet</span></button>
       </div>
     </div>

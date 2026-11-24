@@ -282,15 +282,36 @@
     el.btnPlay.classList.toggle('playing', playing);
     el.btnPlay.setAttribute('aria-label', playing ? 'Durdur' : 'Oynat');
   }
+  // Oynat düğmesi kesilmiş hâli oynatır: Tut'ta yalnızca seçili parça, Çıkar'da seçili parça atlanır.
   function togglePlay() {
     if (!state.info) return;
     if (v.paused || v.ended) {
-      cancelPreview();
-      if (state.now >= state.duration - 0.02) seekTo(0);
-      v.play().catch(() => {});
+      const D = state.duration, { inT, outT } = state;
+      const end = 0.02;
+      let start = state.now, pv;
+      if (state.mode === 'keep') {
+        if (start < inT || start >= outT - end) start = inT;
+        pv = { stopAt: outT };
+      } else {
+        const tailGone = outT >= D - end;
+        const stopAt = tailGone ? inT : D;
+        if (start >= stopAt - end) start = inT < 0.05 ? outT : 0;
+        if (start >= inT && start < outT) start = tailGone ? 0 : outT;
+        pv = { skipFrom: inT, skipTo: outT, stopAt };
+      }
+      seekTo(start);
+      state.preview = pv;
+      v.play().then(() => { state.preview = pv; }).catch(() => {});
     } else {
       v.pause();
     }
+  }
+  // Videodaki konumu, kesilmiş sonuçtaki konuma çevirir (saatte gösterilir).
+  function resultTime(t) {
+    const { inT, outT } = state;
+    if (state.mode === 'keep') return clamp(t - inT, 0, outT - inT);
+    if (t < inT) return t;
+    return t >= outT ? t - (outT - inT) : inT;
   }
   function tick() {
     state.raf = null;
@@ -394,7 +415,7 @@
   }
   function renderPlayhead() {
     el.playhead.style.left = pct(state.now);
-    el.tNow.textContent = fmtTime(state.now);
+    el.tNow.textContent = fmtTime(resultTime(state.now));
     setSliderAria(el.playhead, state.now, state.duration);
   }
   function renderMarks() {
@@ -430,6 +451,7 @@
     const q = effectiveQuality();
     const dur = outputDuration();
     el.sumDur.textContent = (q === 'fast' ? '≈ ' : '') + fmtTime(dur);
+    el.tTotal.textContent = el.sumDur.textContent;
     const vf = G.videoFilter({ info: state.info, crop: state.crop, resize: state.resize });
     el.sumSize.textContent = `${vf.outW}×${vf.outH}`;
     const edits = hasEdits();
@@ -454,6 +476,9 @@
     el.track.dataset.mode = state.mode;
     document.querySelectorAll('.seg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mode === state.mode)));
     document.querySelectorAll('.ratio').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.ratio === state.ratioKey)));
+    $('ratioLabel').textContent = { orig: 'Orijinal', free: 'Serbest' }[state.ratioKey] || state.ratioKey;
+    $('btnRatio').classList.toggle('active', state.ratioKey !== 'orig');
+    $('btnMode').setAttribute('aria-checked', String(state.mode === 'remove'));
     const forced = !!(state.crop || state.resize || state.annos.length);
     el.optFast.disabled = forced;
     el.optFast.checked = effectiveQuality() === 'fast';
@@ -705,7 +730,7 @@
     e.stopPropagation();
     resetCrop();
   });
-  $('btnCropReset').addEventListener('click', (e) => { if (e.detail > 0) e.currentTarget.blur(); resetCrop(); });
+  $('btnCropReset').addEventListener('click', (e) => { if (e.detail > 0) e.currentTarget.blur(); resetCrop(); closeRatioMenu(e.detail === 0); });
 
   // Klavyeyle kadraj: oklar taşır (Shift 10 px), Alt + oklar boyutlandırır.
   el.crop.addEventListener('keydown', (e) => {
@@ -743,7 +768,44 @@
   });
 
   // ---------- Panel ----------
-  document.querySelectorAll('.ratio').forEach((b) => b.addEventListener('click', () => setRatio(b.dataset.ratio, false)));
+  document.querySelectorAll('.ratio').forEach((b) => b.addEventListener('click', () => { setRatio(b.dataset.ratio, false); closeRatioMenu(b.matches(':focus-visible')); }));
+
+  // Kadraj seçici: üstte tek düğme, oranlar tıklayınca açılan menüde
+  const ratioMenu = $('ratioMenu'), btnRatio = $('btnRatio');
+  function openRatioMenu(focus) {
+    ratioMenu.hidden = false;
+    btnRatio.setAttribute('aria-expanded', 'true');
+    if (focus) (ratioMenu.querySelector('.ratio[aria-checked="true"]') || ratioMenu.querySelector('.ratio')).focus();
+  }
+  function closeRatioMenu(returnFocus) {
+    if (ratioMenu.hidden) return;
+    ratioMenu.hidden = true;
+    btnRatio.setAttribute('aria-expanded', 'false');
+    if (returnFocus) btnRatio.focus();
+  }
+  btnRatio.addEventListener('click', (e) => {
+    if (ratioMenu.hidden) openRatioMenu(e.detail === 0); else closeRatioMenu(e.detail === 0);
+    if (e.detail > 0) btnRatio.blur();
+  });
+  document.addEventListener('pointerdown', (e) => { if (!e.target.closest('.ratio-wrap')) closeRatioMenu(false); });
+  ratioMenu.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeRatioMenu(true); return; }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const items = [...ratioMenu.querySelectorAll('button:not([hidden])')];
+      const i = items.indexOf(document.activeElement);
+      items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+      e.preventDefault();
+    }
+    if (e.key !== 'Tab') e.stopPropagation();
+  });
+  ratioMenu.addEventListener('focusout', (e) => { if (e.relatedTarget && !e.relatedTarget.closest('.ratio-wrap')) closeRatioMenu(false); });
+
+  // Tut / Çıkar anahtarı
+  $('btnMode').addEventListener('click', (e) => {
+    if (e.detail > 0) e.currentTarget.blur();
+    const next = state.mode === 'keep' ? 'remove' : 'keep';
+    document.querySelector(`.seg button[data-mode="${next}"]`).click();
+  });
   document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
     state.mode = b.dataset.mode;
     cancelPreview();
