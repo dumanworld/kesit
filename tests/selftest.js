@@ -65,15 +65,29 @@
     await ok('küçük resimler', thumbs);
     await ok('pencere başlığı', document.title.startsWith('land.mp4'), document.title);
 
-    // --- Üzerine kaydet + geri al ---
+    // --- Kaydet: orijinalin yanına yeni dosya, orijinal değişmez ---
     K.setIn(2); K.setOut(6);
     await sleep(200);
     document.getElementById('btnExport').click();
     const saved = await until(async () => {
       const t = document.getElementById('toast');
-      return !t.hidden && /Kaydedildi|kaydedildi/.test(t.textContent) ? t.textContent : null;
+      return !t.hidden && /Kaydedildi: land_kesit\.mp4/.test(t.textContent) ? t.textContent : null;
     }, 30000);
-    await ok('Kaydet (üzerine yaz)', saved, saved);
+    await ok('Kaydet (yeni dosya)', saved, saved);
+    const ver = await api.probe(work('land_kesit.mp4'));
+    const orig = await api.probe(work('land.mp4'));
+    await ok('yeni dosya 4 sn, orijinal 10 sn', ver.ok && Math.abs(ver.info.duration - 4) < 0.15 && orig.ok && Math.abs(orig.info.duration - 10) < 0.1,
+      { ver: ver.ok && ver.info.duration, orig: orig.ok && orig.info.duration });
+
+    // --- Kaydet menüsü > Orijinalin üstüne kaydet + geri al ---
+    const ow = document.getElementById('btnOverwrite');
+    await ok('üstüne kaydet seçeneği açık', !ow.disabled);
+    ow.click();
+    const overwritten = await until(async () => {
+      const t = document.getElementById('toast');
+      return !t.hidden && /Kaydedildi/.test(t.textContent) && /Geri al/.test(t.textContent) ? t.textContent : null;
+    }, 30000);
+    await ok('Kaydet (üzerine yaz)', overwritten, overwritten);
     const after = await api.probe(work('land.mp4'));
     await ok('kaydedilen süre 4 sn', after.ok && Math.abs(after.info.duration - 4) < 0.15, after.ok && after.info.duration);
     const backups = await invoke('ff_capture', { args: ['-hide_banner', '-i', work('.land.kesit-yedek.mp4')], binary: false });
@@ -178,7 +192,7 @@
     if (p2c) { const pr2 = await api.probe(p2c); d2 = pr2.ok && pr2.info.duration; }
     await ok('kesilmiş hali panoya', /Panoya kopyalandı \(/.test(c2 || '') && (p2c === null || (/kesit-pano/.test(p2c) && /land_kesit\.mp4$/.test(p2c) && Math.abs(d2 - 4) < 0.2)), { c2, p2c, d2 });
     await K.openFile(work('land.mp4'));
-    await until(() => K.state.annos.length === 0 && Math.abs(K.state.inT) < 0.01, 5000);
+    await until(() => K.state.annos.length === 0 && K.state.segs.length === 1 && Math.abs(K.state.segs[0][0]) < 0.01, 5000);
     await K.addImageFile(media('overlay.png'));
     await ok('bilgisayardan görsel eklendi', K.state.annos.length === 1 && K.state.annos[0].type === 'image' && /^data:image\/png/.test(K.state.annos[0].src));
 
@@ -204,13 +218,16 @@
     await until(() => K.state.file && K.state.file.endsWith('land.mp4'), 5000);
     K.setIn(0); K.setOut(5);
     await sleep(200);
+    const verPath = await api.nextVersionPath({ input: work('land.mp4'), suffix: '_kesit', ext: '.mp4' });
     pending = K.requestOpen(work('ikinci.mp4'));
     await until(askOpen, 3000);
     document.getElementById('askSave').click();
     await pending;
     await until(() => K.state.file && K.state.file.endsWith('ikinci.mp4'), 30000);
-    const land3 = await api.probe(work('land.mp4'));
-    await ok('Kaydet: önce kaydetti, sonra açtı', K.state.file.endsWith('ikinci.mp4') && land3.ok && Math.abs(land3.info.duration - 5) < 0.15, land3.ok && land3.info.duration);
+    const land3 = await api.probe(verPath);
+    const land3o = await api.probe(work('land.mp4'));
+    await ok('Kaydet: önce kaydetti, sonra açtı', K.state.file.endsWith('ikinci.mp4') && land3.ok && Math.abs(land3.info.duration - 5) < 0.15 && land3o.ok && Math.abs(land3o.info.duration - 10) < 0.1,
+      { ver: land3.ok && land3.info.duration, orig: land3o.ok && land3o.info.duration });
     await api.commitSave();
 
     // --- Farklı kaydet sonrası tekrar sormasın ---
@@ -236,10 +253,11 @@
     await sleep(400);
     const bu = document.getElementById('btnUndo'), br = document.getElementById('btnRedo');
     await ok('geri al düğmesi açık, yinele kapalı', !bu.disabled && br.disabled);
+    const firstStart = () => (K.state.segs[0] || [NaN])[0];
     bu.click();
-    await ok('geri al düğmesi çalışıyor', Math.abs(K.state.inT - 1) < 0.05 && !br.disabled, K.state.inT);
+    await ok('geri al düğmesi çalışıyor', Math.abs(firstStart() - 1) < 0.05 && !br.disabled, firstStart());
     br.click();
-    await ok('yinele düğmesi çalışıyor', Math.abs(K.state.inT - 1.5) < 0.05, K.state.inT);
+    await ok('yinele düğmesi çalışıyor', Math.abs(firstStart() - 1.5) < 0.05, firstStart());
 
     // --- Menü ve videoyu kapat ---
     K.openAppMenu(false);
