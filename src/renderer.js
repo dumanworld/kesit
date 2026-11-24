@@ -123,7 +123,7 @@
   function askSave() {
     return new Promise((resolve) => {
       const name = (state.file || '').split(/[\\/]/).pop();
-      $('askText').textContent = `"${name}" üzerindeki değişiklikler kaydedilmedi. Kaydet, orijinal dosyanın üzerine yazar.`;
+      $('askText').textContent = `"${name}" üzerindeki değişiklikler kaydedilmedi. Kaydet, aynı klasöre yeni bir dosya olarak kaydeder; orijinal değişmez.`;
       const before = document.activeElement;
       $('askModal').hidden = false;
       setBackgroundInert(true);
@@ -149,7 +149,7 @@
     v.pause();
     const choice = await askSave();
     if (choice === 'cancel') return false;
-    if (choice === 'save') return !!(await doExport(true));
+    if (choice === 'save') return !!(await doExport('version'));
     return true;
   }
   async function requestOpen(file) {
@@ -478,7 +478,11 @@
     document.querySelectorAll('.ratio').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.ratio === state.ratioKey)));
     $('ratioLabel').textContent = { orig: 'Orijinal', free: 'Serbest' }[state.ratioKey] || state.ratioKey;
     $('btnRatio').classList.toggle('active', state.ratioKey !== 'orig');
-    $('btnMode').setAttribute('aria-checked', String(state.mode === 'remove'));
+    $('btnMode').classList.toggle('remove', state.mode === 'remove');
+    $('modeLabel').textContent = state.mode === 'remove' ? 'Seçileni sil' : 'Seçileni tut';
+    $('btnMode').title = state.mode === 'remove'
+      ? 'Seçili kısım silinir, kalan parçalar birleşir. Tutmak için tıkla'
+      : 'Yalnızca seçili kısım kalır. Silmek için tıkla';
     const forced = !!(state.crop || state.resize || state.annos.length);
     el.optFast.disabled = forced;
     el.optFast.checked = effectiveQuality() === 'fast';
@@ -1268,12 +1272,13 @@
     else if (document.activeElement) document.activeElement.blur();
   }
 
-  // overwrite=true: orijinalin üzerine yazar (Kaydet). false: yeni dosya (Farklı kaydet).
   async function doExport(overwrite) {
+    // overwrite: true = üzerine yaz, false = Farklı kaydet, 'clipboard' = panoya, 'version' = yanına yeni sürüm
     const toClipboard = overwrite === 'clipboard';
-    if (toClipboard) overwrite = false;
+    const asVersion = overwrite === 'version';
+    if (toClipboard || asVersion) overwrite = false;
     if (!state.info || state.exporting) return;
-    if (overwrite && !hasEdits()) { toast('Kaydedilecek değişiklik yok'); return; }
+    if ((overwrite || asVersion) && !hasEdits()) { toast('Kaydedilecek değişiklik yok'); return; }
     if (outputDuration() < 0.05) { toast('Çıktıda kalacak bir bölüm yok, başlangıç ve bitişi kontrol et', 'error'); return; }
     const quality = effectiveQuality();
     v.pause();
@@ -1282,7 +1287,9 @@
       const ext = quality === 'fast' ? state.srcExt : '.mp4';
       output = toClipboard
         ? await api.clipboardTarget({ input: state.file, ext })
-        : await api.saveDialog({ input: state.file, suffix: '_kesit', ext, kind: 'video' });
+        : asVersion
+          ? await api.nextVersionPath({ input: state.file, suffix: '_kesit', ext })
+          : await api.saveDialog({ input: state.file, suffix: '_kesit', ext, kind: 'video' });
       if (!output) return;
     }
     const file = state.file;
@@ -1416,7 +1423,7 @@
   onClick($('btnOpen2'), openDialog);
   onClick(el.btnPlay, togglePlay);
   onClick(el.btnPreview, () => { closeMenu(); previewResult(); });
-  onClick(el.btnExport, () => doExport(true));
+  onClick(el.btnExport, () => doExport('version'));
   onClick(el.btnSaveAs, () => doExport(false));
   onClick(el.btnFrame, () => { closeMenu(); saveFrame(); });
   document.querySelectorAll('.ratio, .seg button').forEach((b) => b.addEventListener('mouseup', () => b.blur()));
@@ -1480,7 +1487,7 @@
       if (e.key === 'Escape' && state.exporting) api.cancelExport();
       return;
     }
-    if (ctrl && (k === 's' || e.code === 'KeyS')) { e.preventDefault(); doExport(!e.shiftKey); return; }
+    if (ctrl && (k === 's' || e.code === 'KeyS')) { e.preventDefault(); doExport(e.shiftKey ? false : 'version'); return; }
     if (ctrl && e.shiftKey && (k === 'c' || e.code === 'KeyC')) { e.preventDefault(); copyToClipboard(); return; }
     if (ctrl && !e.altKey && (k === 'z' || e.code === 'KeyZ')) { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
     if (ctrl && !e.altKey && (k === 'y' || e.code === 'KeyY')) { e.preventDefault(); redo(); return; }
@@ -1640,7 +1647,7 @@
   const MENU = [
     { label: 'Dosya', items: [
       { label: 'Video aç…', keys: 'Ctrl O', run: openDialog },
-      { label: 'Kaydet', keys: 'Ctrl S', run: () => doExport(true), on: () => hasFile() && hasEdits() && outputDuration() >= 0.05 },
+      { label: 'Kaydet', keys: 'Ctrl S', run: () => doExport('version'), on: () => hasFile() && hasEdits() && outputDuration() >= 0.05 },
       { label: 'Farklı kaydet…', keys: 'Ctrl Shift S', run: () => doExport(false), on: () => hasFile() && outputDuration() >= 0.05 },
       { label: 'Panoya kopyala', keys: 'Ctrl Shift C', run: copyToClipboard, on: () => hasFile() && outputDuration() >= 0.05 && estimateSize() <= CLIP_MAX },
       { label: 'Bu kareyi PNG olarak kaydet…', run: saveFrame, on: hasFile },

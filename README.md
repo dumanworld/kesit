@@ -5,7 +5,7 @@ Windows için hızlı video kesme ve kırpma uygulaması. Videoya sağ tıkla, "
 - Kesme: seçili kısmı tut ya da çıkar (kalan parçalar birleştirilir)
 - Kırpma: serbest ya da 9:16, 4:5, 1:1, 16:9
 - Çizim: ok, daire ve görsel (bilgisayardan, sürükle bırak ya da Ctrl+V; kırmızı çerçeveli yuvarlak)
-- Kaydet orijinalin üzerine yazar ve geri alınabilir; Farklı kaydet yeni dosya açar
+- Kaydet orijinali değiştirmez, aynı klasöre yeni bir dosya (ad_kesit.mp4) yazar; Farklı kaydet yeri ve adı sorar
 - Hassas mod (H.264 MP4, iPhone HDR'yi SDR'ye çevirir) ya da hızlı ve kayıpsız mod
 - Sol üstte Dosya / Düzen / Görünüm / Yardım menüsü, geri al ve yinele düğmeleri (Ctrl+Z / Ctrl+Y)
 - Kaydedilmemiş değişiklik varken başka dosya açınca ya da kapatınca sorar

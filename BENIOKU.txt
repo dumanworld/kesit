@@ -22,11 +22,12 @@ NASIL KULLANILIR
    sürükle ya da kopyaladığın görseli Ctrl+V ile yapıştır: kırmızı çerçeveli
    yuvarlak olarak eklenir. Çizimleri sürükleyerek taşı,
    tutamaçlardan boyutlandır, Delete ya da × ile sil. Kaydederken videoya işlenir.
-4. Alt çubukta "Tut" seçili kısmı kaydeder, "Çıkar" seçili kısmı silip kalan
-   parçaları birleştirir.
-5. Kaydet (Ctrl+S) orijinal dosyanın üzerine yazar. Çıkan bildirimdeki
-   "Geri al" ile hemen geri dönebilirsin; bildirim kapanınca eski hali Geri
-   Dönüşüm Kutusu'na gider. Yeni bir dosya için Farklı kaydet (Ctrl+Shift+S).
+4. Üstteki düğme tıkladıkça değişir: "Seçileni tut" yalnızca seçili kısmı
+   bırakır, "Seçileni sil" seçili kısmı silip kalan parçaları birleştirir.
+   Oynat düğmesi videonun kesilmiş hâlini oynatır.
+5. Kaydet (Ctrl+S) orijinal dosyaya dokunmaz; aynı klasöre yeni bir dosya
+   yazar (örneğin tatil_kesit.mp4, sonra tatil_kesit_2.mp4). Yeri ve adı
+   kendin seçmek için Farklı kaydet (Ctrl+Shift+S).
    Kaydetmeden başka bir video açarsan ya da pencereyi kapatırsan Kesit sorar.
 
 PANOYA KOPYALA
@@ -52,7 +53,7 @@ Home / End       başa / sona git
 P                sonucu önizle
 Ctrl+Z / Ctrl+Y  geri al / yinele
 Ctrl+O / Ctrl+W  video aç / kapat
-Ctrl+S           kaydet (üzerine yazar, ardından geri alınabilir)
+Ctrl+S           kaydet (aynı klasöre yeni dosya, orijinal değişmez)
 Ctrl+Shift+S     farklı kaydet
 Ctrl + / Ctrl -  yakınlaştır / uzaklaştır (Ctrl 0 sıfırlar)
 

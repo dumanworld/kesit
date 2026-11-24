@@ -316,6 +316,10 @@
       return p;
     },
 
+    // Kaydet: orijinalin yanına yeni bir sürüm (ad_kesit.mp4, ad_kesit_2.mp4 …); pencere açmaz.
+    nextVersionPath: async ({ input, suffix, ext }) =>
+      uniquePath(P.dirname(input), P.basename(input, P.extname(input)) + suffix, ext),
+
     exportVideo,
     cancelExport: async () => { exportCanceled = true; await kill(exportJob); },
 
