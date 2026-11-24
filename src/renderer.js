@@ -1611,6 +1611,8 @@
     { label: 'Yardım', items: [
       { label: 'Klavye kısayolları', run: showKeys },
       { label: 'Güncellemeleri denetle', run: () => checkUpdate(true) },
+      { label: 'Deneme sürümlerini al', check: () => previewChannel, run: togglePreview,
+        hint: 'Yayınlanmamış en son değişiklikler de güncelleme olarak gelir. Kararsız olabilir' },
       { label: 'GitHub sayfası', run: () => api.openUrl('https://github.com/dumanworld/kesit') },
       '-',
       { label: 'Kesit hakkında', run: showAbout }
@@ -1635,7 +1637,7 @@
         const b = document.createElement('button');
         b.type = 'button'; b.className = 'mitem'; b.setAttribute('role', it.check ? 'menuitemcheckbox' : 'menuitem');
         b.textContent = it.label;
-        if (it.check) b.title = "Windows 11'de videoya ilk sağ tıklamada \"Kesit ile düzenle\" görünsün. Tüm sağ tık menüleri Windows 10'daki gibi açılır";
+        if (it.check) b.title = it.hint || "Windows 11'de videoya ilk sağ tıklamada \"Kesit ile düzenle\" görünsün. Tüm sağ tık menüleri Windows 10'daki gibi açılır";
         if (it.keys) { const k = document.createElement('span'); k.className = 'am-keys'; k.textContent = it.keys; b.append(k); }
         b.addEventListener('click', () => { closeAppMenu(false); it.run(); });
         b._item = it;
@@ -1728,6 +1730,14 @@
 
   // ---------- Güncelleme ----------
   let updating = false;
+  let previewChannel = false;
+  api.getPreview().then((on) => { previewChannel = on; }).catch(() => {});
+  async function togglePreview() {
+    previewChannel = !previewChannel;
+    await api.setPreview(previewChannel);
+    if (previewChannel) checkUpdate(true);
+    else toast('Deneme sürümleri kapatıldı. Bir sonraki kararlı sürüm normal güncelleme olarak gelir');
+  }
   async function checkUpdate(manual) {
     let u = null;
     try { u = await api.checkUpdate(); }

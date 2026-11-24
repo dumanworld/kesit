@@ -501,6 +501,8 @@ fn set_zoom(window: tauri::WebviewWindow, zoom: f64) -> Result<(), String> {
 // ---------------- Güncelleme ----------------
 // GitHub'daki son sürümün latest.json dosyasına bakar; imzası doğrulanan kurulumu indirip çalıştırır.
 
+const PREVIEW_ENDPOINT: &str = "https://github.com/dumanworld/kesit/releases/download/onizleme/latest.json";
+
 #[derive(Default)]
 struct PendingUpdate(Mutex<Option<tauri_plugin_updater::Update>>);
 
@@ -511,11 +513,27 @@ struct UpdateInfo {
 }
 
 #[tauri::command]
-async fn update_check(app: AppHandle, pending: State<'_, PendingUpdate>) -> Result<Option<UpdateInfo>, String> {
+async fn update_check(app: AppHandle, pending: State<'_, PendingUpdate>, preview: Option<bool>) -> Result<Option<UpdateInfo>, String> {
     if cfg!(debug_assertions) || std::env::var_os("KESIT_GUNCELLEME_YOK").is_some() {
         return Ok(None);
     }
-    let update = app.updater().map_err(|e| e.to_string())?.check().await.map_err(|e| e.to_string())?;
+    // Deneme sürümleri: main dalına her gönderimde derlenen "onizleme" sürümü. Yoksa kararlı sürüme bakılır.
+    let mut update = None;
+    if preview.unwrap_or(false) {
+        let url = tauri::Url::parse(PREVIEW_ENDPOINT).map_err(|e| e.to_string())?;
+        update = app
+            .updater_builder()
+            .endpoints(vec![url])
+            .map_err(|e| e.to_string())?
+            .build()
+            .map_err(|e| e.to_string())?
+            .check()
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    if update.is_none() {
+        update = app.updater().map_err(|e| e.to_string())?.check().await.map_err(|e| e.to_string())?;
+    }
     let info = update.as_ref().map(|u| UpdateInfo { version: u.version.clone(), notes: u.body.clone() });
     *pending.0.lock().unwrap() = update;
     Ok(info)

@@ -52,8 +52,10 @@ jobs:
     name: Derle (kurulum + taşınabilir)
     runs-on: windows-latest
     env:
-      TAG: ${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
+      TAG: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'onizleme' || github.event.release.tag_name || inputs.release_tag || github.ref_name }}
       RELEASING: ${{ github.event_name == 'release' || inputs.release_tag != '' }}
+      # main'e her gönderim "onizleme" adlı deneme sürümüne yüklenir (Kesit'te Yardım > Deneme sürümlerini al)
+      PREVIEW: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -70,11 +72,15 @@ jobs:
         shell: pwsh
         run: |
           # Etiket v1.2.3 ya da 1.2.3 ise uygulamanın sürümü odur; değilse tauri.conf.json'daki kalır.
-          if ($env:RELEASING -eq 'true' -and $env:TAG -match '^v?(\d+\.\d+\.\d+)$') {
-            $ver = $Matches[1]
-            $f = 'src-tauri/tauri.conf.json'
-            (Get-Content $f -Raw) -replace '"version":\s*"[^"]*"', "`"version`": `"$ver`"" | Set-Content $f -NoNewline
+          $f = 'src-tauri/tauri.conf.json'
+          $ver = $null
+          if ($env:RELEASING -eq 'true' -and $env:TAG -match '^v?(\d+\.\d+\.\d+)$') { $ver = $Matches[1] }
+          elseif ($env:PREVIEW -eq 'true') {
+            # Deneme sürümü: bir sonraki yamadan küçük, kurulu kararlı sürümden büyük (ör. 1.4.1-37)
+            $v = [version](Get-Content $f | ConvertFrom-Json).version
+            $ver = "$($v.Major).$($v.Minor).$($v.Build + 1)-${{ github.run_number }}"
           }
+          if ($ver) { (Get-Content $f -Raw) -replace '"version":\s*"[^"]*"', "`"version`": `"$ver`"" | Set-Content $f -NoNewline }
           "Sürüm: " + (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
       - name: Tauri derle
         shell: pwsh
@@ -83,7 +89,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
         run: |
           if ($env:TAURI_SIGNING_PRIVATE_KEY) { npx tauri build }
-          elseif ($env:RELEASING -eq 'true') { throw 'TAURI_SIGNING_PRIVATE_KEY secret eksik: güncelleme dosyaları imzalanamaz.' }
+          elseif ($env:RELEASING -eq 'true' -or $env:PREVIEW -eq 'true') { throw 'TAURI_SIGNING_PRIVATE_KEY secret eksik: güncelleme dosyaları imzalanamaz.' }
           else {
             Write-Warning 'İmza anahtarı yok; güncelleme dosyaları olmadan derleniyor.'
             Set-Content $env:RUNNER_TEMP/imzasiz.json '{"bundle":{"createUpdaterArtifacts":false}}'
@@ -102,14 +108,15 @@ jobs:
           Copy-Item BENIOKU.txt $dir/
           Compress-Archive -Path $dir -DestinationPath "dist/Kesit-$ver-tasinabilir.zip" -Force
           $setup = Get-ChildItem src-tauri/target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
-          Copy-Item $setup.FullName "dist/Kesit-$ver-kurulum.exe"
+          $setupName = if ($env:PREVIEW -eq 'true') { 'Kesit-onizleme-kurulum.exe' } else { "Kesit-$ver-kurulum.exe" }
+          Copy-Item $setup.FullName "dist/$setupName"
           # Uygulamanın güncelleme denetimi bu dosyaya bakar (releases/latest/download/latest.json)
           $sig = "$($setup.FullName).sig"
           if (Test-Path $sig) {
-            $url = "https://github.com/${{ github.repository }}/releases/download/$([uri]::EscapeDataString($env:TAG))/Kesit-$ver-kurulum.exe"
+            $url = "https://github.com/${{ github.repository }}/releases/download/$([uri]::EscapeDataString($env:TAG))/$setupName"
             $manifest = [ordered]@{
               version   = $ver
-              notes     = "Kesit $ver"
+              notes     = $(if ($env:PREVIEW -eq 'true') { "Deneme sürümü $ver ($('${{ github.sha }}'.Substring(0, 7)))" } else { "Kesit $ver" })
               pub_date  = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
               platforms = [ordered]@{ 'windows-x86_64' = [ordered]@{ signature = (Get-Content $sig -Raw).Trim(); url = $url } }
             }
@@ -134,3 +141,14 @@ jobs:
           gh release view "$env:TAG" *> $null
           if ($LASTEXITCODE -ne 0) { gh release create "$env:TAG" --title "Kesit $env:TAG" --generate-notes }
           gh release upload "$env:TAG" (Get-ChildItem dist/*.zip, dist/*.exe, dist/latest.json).FullName --clobber
+      - name: Deneme sürümüne yükle
+        if: env.PREVIEW == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release view onizleme *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create onizleme --prerelease --target "${{ github.sha }}" --title "Önizleme (deneme sürümü)" --notes "main dalının son hali. Kararsız olabilir; Kesit'te Yardım > Deneme sürümlerini al ile otomatik gelir."
+          }
+          gh release upload onizleme dist/Kesit-onizleme-kurulum.exe dist/latest.json --clobber

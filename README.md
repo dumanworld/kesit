@@ -18,6 +18,10 @@ Kullanım ve kısayollar [BENIOKU.txt](BENIOKU.txt) dosyasında.
 
 **[Son sürümü indir](https://github.com/dumanworld/kesit/releases/latest)**: `Kesit-…-kurulum.exe` (önerilen) ya da taşınabilir zip.
 
+## Deneme sürümleri
+
+`main`'e her gönderimden birkaç dakika sonra derleme [Önizleme](https://github.com/dumanworld/kesit/releases/tag/onizleme) sürümüne yüklenir. Kesit'te **Yardım → Deneme sürümlerini al** açıksa bu derleme güncelleme olarak gelir; **Yardım → Güncellemeleri denetle** hemen bakar. Deneme sürümünün numarası bir sonraki yamadan küçüktür (ör. `1.4.1-37`), bu yüzden kararlı sürüm çıkınca o da normal güncelleme olarak gelir.
+
 ## Sürüm yayınlama
 
 1. GitHub'da **Releases → Draft a new release** aç.

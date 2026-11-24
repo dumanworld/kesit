@@ -358,7 +358,9 @@
     appVersion: () => T.app.getVersion(),
     quit: () => appWindow.close(),
     openUrl: (url) => invoke('open_url', { url }).catch(() => {}),
-    checkUpdate: () => invoke('update_check'),
+    checkUpdate: async () => { await settingsReady; return invoke('update_check', { preview: !!settings.preview }); },
+    getPreview: async () => { await settingsReady; return !!settings.preview; },
+    setPreview: async (on) => { await settingsReady; settings.preview = !!on; await invoke('set_settings', { value: settings }).catch(() => {}); },
     installUpdate: async (onProgress) => {
       const ch = new Channel();
       ch.onmessage = (p) => onProgress && onProgress(p);
