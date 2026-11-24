@@ -1,7 +1,7 @@
 {
   "name": "kesit",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Windows için hızlı video kesme ve kırpma uygulaması",
   "scripts": {
     "dev": "tauri dev",

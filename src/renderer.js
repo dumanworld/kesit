@@ -180,6 +180,7 @@
     clearAnnos();
 
     el.app.dataset.state = 'loaded';
+    document.querySelector('.fb-center').inert = false;
     [el.btnPlay, el.inTime, el.outTime, el.btnFrame, el.btnPreview, el.optResize, ...document.querySelectorAll('.seg button')]
       .forEach((n) => { n.disabled = false; });
     el.tTotal.textContent = fmtTime(r.info.duration);
@@ -1194,7 +1195,7 @@
 
   // ---------- Dışa aktarma ----------
   // Kaydetme penceresi açıkken arkadaki her şey odak ve ekran okuyucu dışında kalır.
-  const BACKGROUND = () => [document.querySelector('.stage'), document.querySelector('.transport')];
+  const BACKGROUND = () => [document.querySelector('.framebar'), document.querySelector('.stage'), document.querySelector('.transport')];
   function setBackgroundInert(on) { BACKGROUND().forEach((n) => { n.inert = on; }); }
   // Odak, pencere açılmadan önce neredeyse oraya döner (fareyle tıklandıysa hiçbir yere: Boşluk yine oynatsın).
   let focusBeforeSave = null;
@@ -1497,6 +1498,7 @@
     clearAnnos();
     Object.assign(state, { file: null, info: null, duration: 0, inT: 0, outT: 0, now: 0, crop: null, mode: 'keep', proxy: false });
     el.app.dataset.state = 'empty';
+    document.querySelector('.fb-center').inert = true;
     el.strip.innerHTML = '';
     [el.btnPlay, el.inTime, el.outTime, el.btnFrame, el.btnPreview, el.optResize, el.optMute, el.btnExport, el.btnSaveAs, $('btnCopy'),
       ...document.querySelectorAll('.seg button')].forEach((n) => { n.disabled = true; });
