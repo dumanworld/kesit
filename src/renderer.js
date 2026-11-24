@@ -555,12 +555,11 @@
     overwrite: { item: 'btnOverwrite', run: () => doExport(true), title: 'Orijinalin üstüne kaydet: kaydettikten hemen sonra geri alınabilir' },
     saveas: { item: 'btnSaveAs', run: () => doExport(false), title: 'Farklı kaydet: yeri ve adı sen seç (Ctrl Shift S)' }
   };
-  let saveMode = 'version';
-  try { const m = localStorage.getItem('kesit.saveMode'); if (SAVE_MODES[m]) saveMode = m; } catch (_) { /* depolama yok */ }
+  let saveMode = 'version'; // her açılışta yeni dosya olarak kaydetle başlar; yalnız bu oturumda hatırlanır
+  try { localStorage.removeItem('kesit.saveMode'); } catch (_) { /* depolama yok */ }
   function setSaveMode(m) {
     if (!SAVE_MODES[m]) return;
     saveMode = m;
-    try { localStorage.setItem('kesit.saveMode', m); } catch (_) { /* depolama yok */ }
     renderSaveMode();
     renderSummary();
   }
