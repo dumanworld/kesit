@@ -603,10 +603,10 @@
     if (!state.info || e.button !== 0) return;
     const h = e.target.closest('.handle');
     const t0 = xToTime(e.clientX);
-    if (!state.cutEdit) {
-      state.drag = { kind: 'seek' }; // Kes kapalıyken şeridin her yeri videoda gezer
-    } else if (h && h.dataset.i != null) {
-      state.drag = { kind: 'edge', i: +h.dataset.i, side: h.dataset.side };
+    if (h && h.dataset.i != null) {
+      state.drag = { kind: 'edge', i: +h.dataset.i, side: h.dataset.side }; // uç tutamaçları Kes kapalıyken de çalışır
+    } else if (!state.cutEdit) {
+      state.drag = { kind: 'seek' }; // Kes kapalıyken şeridin geri kalanı videoda gezer
     } else {
       state.drag = { kind: 'range', t0, x0: e.clientX, keep: segAt(t0) >= 0, moved: false };
     }
@@ -646,6 +646,7 @@
     if (!d) return;
     state.drag = null;
     el.track.parentElement.classList.remove('scrubbing');
+    if (!el.track.matches(':hover')) el.track.classList.remove('peek');
     pending.hidden = true;
     $('edgeTip').hidden = true;
     if (d.kind === 'range') {
@@ -982,37 +983,20 @@
   document.querySelectorAll('.ratio').forEach((b) => b.addEventListener('click', () => { setRatio(b.dataset.ratio, false); setCropEdit(b.dataset.ratio !== 'orig'); closeRatioMenu(b.matches(':focus-visible')); }));
 
   // Kırp düğmesi kırpmayı açıp kapatır; yanındaki ok oranları açar.
-  // Düğmelere ek olarak:
-  //  - fare film şeridinin tam üstünde 1 sn kıpırdamadan durursa kesme tutamaçları belirir,
-  //    şeritten çıkınca hemen kaybolur (Kes düğmesiyle açıldıysa kalır);
-  //  - fare videonun üstündeyken kırpma tutamaçları hemen görünür; kırpma ancak bir tutamaç
-  //    sürüklenince açılır.
-  const DWELL_MS = 1000;
-  {
-    let timer = 0, lastX = -1, lastY = -1, auto = false;
-    el.track.addEventListener('pointermove', (e) => {
-      if (Math.abs(e.clientX - lastX) < 3 && Math.abs(e.clientY - lastY) < 3) return; // titremeyi hareket sayma
-      lastX = e.clientX; lastY = e.clientY;
-      clearTimeout(timer);
-      if (!state.info || e.buttons || state.cutEdit || state.tool) return;
-      timer = setTimeout(() => {
-        if (state.cutEdit || state.tool || asking || state.exporting || state.drag) return;
-        setCutEdit(true); auto = true;
-      }, DWELL_MS);
-    });
-    el.track.addEventListener('pointerdown', () => { clearTimeout(timer); });
-    const leave = () => {
-      clearTimeout(timer);
-      if (auto && state.cutEdit && !state.drag) setCutEdit(false);
-      if (!state.drag) auto = false;
-    };
-    el.track.addEventListener('pointerleave', leave);
-    el.track.addEventListener('lostpointercapture', (e) => { if (!el.track.matches(':hover')) leave(); });
-    $('btnCut').addEventListener('click', () => { auto = false; }, true);
-  }
+  // Düğmelere ek olarak, fare üstüne gelince tutamaçlar hemen görünür:
+  //  - film şeridinde parçaların uç tutamaçları (sürükleyince ucu taşır; tıklamak yine oynatma noktasını alır,
+  //    aralık kesme / ekleme yalnızca Kes açıkken çalışır),
+  //  - videonun görüntüsünün üstünde kırpma tutamaçları (tutup sürükleyince kırpma açılır).
+  el.track.addEventListener('pointerenter', () => el.track.classList.add('peek'));
+  el.track.addEventListener('pointerleave', () => { if (!state.drag) el.track.classList.remove('peek'); });
   const stageEl = $('stage');
   const setPeek = (on) => { if (state.cropPeek !== on) { state.cropPeek = on; layoutFrame(); } };
-  stageEl.addEventListener('pointerenter', () => setPeek(true));
+  const PEEK_PAD = 10; // tutamaçlar görüntünün kenarından biraz taşar
+  stageEl.addEventListener('pointermove', (e) => {
+    if (state.cropDrag) return;
+    const r = el.frameLayer.getBoundingClientRect();
+    setPeek(!el.frameLayer.hidden && e.clientX >= r.left - PEEK_PAD && e.clientX <= r.right + PEEK_PAD && e.clientY >= r.top - PEEK_PAD && e.clientY <= r.bottom + PEEK_PAD);
+  });
   stageEl.addEventListener('pointerleave', () => { if (!state.cropDrag) setPeek(false); });
   function toggleCropView() {
     state.cropView = !state.cropView;

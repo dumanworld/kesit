@@ -766,3 +766,5 @@ body.dragging .drop-hint { display: flex; }
 .crop.locked.peek .edge, .crop.locked.peek .corner { display: block; pointer-events: auto !important; }
 .crop.locked.peek .edge, .crop.locked.peek .corner { animation: tip-in .15s ease both; }
 .crop.locked.peek:not(.ghost) { outline: 1px solid rgba(255, 255, 255, .6); outline-offset: -1px; }
+/* Film şeridinin üstüne gelince parça uç tutamaçları hemen görünür (Kes kapalıyken de sürüklenebilir) */
+.track.peek .segs .handle { display: grid; animation: tip-in .15s ease both; }
