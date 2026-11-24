@@ -13,12 +13,12 @@
       {
         "label": "main",
         "title": "Kesit",
-        "width": 1280,
-        "height": 800,
+        "width": 980,
+        "height": 660,
         "minWidth": 720,
         "minHeight": 480,
         "center": true,
-        "backgroundColor": "#181818",
+        "backgroundColor": "#f3f3f3",
         "dragDropEnabled": true
       }
     ],

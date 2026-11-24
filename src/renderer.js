@@ -180,7 +180,7 @@
     clearAnnos();
 
     el.app.dataset.state = 'loaded';
-    document.querySelector('.fb-center').inert = false;
+    document.querySelectorAll('.fb-center').forEach((n) => { n.inert = false; });
     [el.btnPlay, el.inTime, el.outTime, el.btnFrame, el.btnPreview, el.optResize, ...document.querySelectorAll('.seg button')]
       .forEach((n) => { n.disabled = false; });
     el.tTotal.textContent = fmtTime(r.info.duration);
@@ -1498,7 +1498,7 @@
     clearAnnos();
     Object.assign(state, { file: null, info: null, duration: 0, inT: 0, outT: 0, now: 0, crop: null, mode: 'keep', proxy: false });
     el.app.dataset.state = 'empty';
-    document.querySelector('.fb-center').inert = true;
+    document.querySelectorAll('.fb-center').forEach((n) => { n.inert = true; });
     el.strip.innerHTML = '';
     [el.btnPlay, el.inTime, el.outTime, el.btnFrame, el.btnPreview, el.optResize, el.optMute, el.btnExport, el.btnSaveAs, $('btnCopy'),
       ...document.querySelectorAll('.seg button')].forEach((n) => { n.disabled = true; });

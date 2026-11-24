@@ -9,13 +9,15 @@
 <div class="app" id="app" data-state="empty">
 
   <header class="framebar" id="framebar">
-    <div class="appbar">
+    <div class="fb-left">
       <div class="appmenu-wrap">
         <button id="btnAppMenu" class="iconbtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="appMenu" aria-label="Menü" title="Menü (Alt)">
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h12M4 10h12M4 14h8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         </button>
         <div class="appmenu" id="appMenu" role="menu" aria-label="Menü" hidden></div>
       </div>
+    </div>
+    <div class="fb-mid">
       <span class="history">
         <button id="btnUndo" class="iconbtn" type="button" aria-label="Geri al" title="Geri al (Ctrl Z)" disabled>
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5L2.5 6.5l3 3M2.5 6.5h7a3.5 3.5 0 0 1 0 7H8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -24,19 +26,9 @@
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 3.5l3 3-3 3M13.5 6.5h-7a3.5 3.5 0 0 0 0 7H8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </span>
-    </div>
-    <div class="fb-center" inert>
-    <span class="vsep" aria-hidden="true"></span>
-    <div class="ratios" role="radiogroup" aria-label="Kadraj">
-      <button type="button" role="radio" class="ratio" data-ratio="orig" aria-checked="true" title="Kırpma yok"><i class="shape orig"></i>Orijinal</button>
-      <button type="button" role="radio" class="ratio" data-ratio="free" aria-checked="false" title="Elle boyutlandır"><i class="shape free"></i>Serbest</button>
-      <button type="button" role="radio" class="ratio" data-ratio="9:16" aria-checked="false" title="Reels, Story"><i class="shape r916"></i>9:16</button>
-      <button type="button" role="radio" class="ratio" data-ratio="4:5" aria-checked="false" title="Gönderi"><i class="shape r45"></i>4:5</button>
-      <button type="button" role="radio" class="ratio" data-ratio="1:1" aria-checked="false" title="Kare"><i class="shape r11"></i>1:1</button>
-      <button type="button" role="radio" class="ratio" data-ratio="16:9" aria-checked="false" title="Yatay"><i class="shape r169"></i>16:9</button>
-    </div>
-    <span class="vsep" aria-hidden="true"></span>
-    <div class="tools" role="group" aria-label="Çizim">
+      <span class="vsep" aria-hidden="true"></span>
+      <div class="fb-center" inert>
+      <div class="tools" role="group" aria-label="Çizim">
       <button type="button" class="tool" data-tool="arrow" aria-pressed="false" title="Ok çiz: videonun üzerinde sürükle">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13L12.5 3.5M7 3.5h5.5V9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Ok</button>
       <button type="button" class="tool" data-tool="ellipse" aria-pressed="false" title="Daire çiz: sürükle, Shift ile tam daire">
@@ -44,7 +36,7 @@
       <button type="button" class="tool" id="btnPaste" title="Bilgisayardan görsel ekle. Kopyaladığın görseli Ctrl+V ile de yapıştırabilirsin">
         <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 11.5l2.5-3 2 2 1.5-1.5 1.5 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Görsel</button>
     </div>
-    <button type="button" class="linkbtn" id="btnCropReset" hidden>Sıfırla</button>
+      </div>
     </div>
     <div class="fb-right">
     <span class="status" id="fHdr" hidden title="Hassas kaydetmede renkler normal görüntüye (SDR) çevrilir">HDR</span>
@@ -92,6 +84,17 @@
   </main>
 
   <footer class="transport" id="transport">
+    <div class="ratiobar fb-center" inert>
+      <div class="ratios" role="radiogroup" aria-label="Kadraj">
+      <button type="button" role="radio" class="ratio" data-ratio="orig" aria-checked="true" title="Kırpma yok"><i class="shape orig"></i>Orijinal</button>
+      <button type="button" role="radio" class="ratio" data-ratio="free" aria-checked="false" title="Elle boyutlandır"><i class="shape free"></i>Serbest</button>
+      <button type="button" role="radio" class="ratio" data-ratio="9:16" aria-checked="false" title="Reels, Story"><i class="shape r916"></i>9:16</button>
+      <button type="button" role="radio" class="ratio" data-ratio="4:5" aria-checked="false" title="Gönderi"><i class="shape r45"></i>4:5</button>
+      <button type="button" role="radio" class="ratio" data-ratio="1:1" aria-checked="false" title="Kare"><i class="shape r11"></i>1:1</button>
+      <button type="button" role="radio" class="ratio" data-ratio="16:9" aria-checked="false" title="Yatay"><i class="shape r169"></i>16:9</button>
+    </div>
+      <button type="button" class="linkbtn" id="btnCropReset" hidden>Sıfırla</button>
+    </div>
     <div class="timeline" id="timeline">
       <div class="ruler" id="ruler"></div>
       <div class="track" id="track" data-mode="keep">
@@ -106,30 +109,32 @@
     </div>
 
     <div class="controls">
-      <div class="playgroup">
-      <button id="btnPlay" class="playbtn" type="button" aria-label="Oynat" title="Oynat (Boşluk)" disabled>
-        <svg class="i-play" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 3.8v12.4L16 10z" fill="currentColor"/></svg>
-        <svg class="i-pause" viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="4" width="3.4" height="12" rx="1" fill="currentColor"/><rect x="11.6" y="4" width="3.4" height="12" rx="1" fill="currentColor"/></svg>
-      </button>
-      <div class="clock"><span id="tNow">0:00.00</span><span class="of" id="tTotal">0:00.00</span></div>
-      </div>
-
-      <div class="cut">
-        <div class="seg" role="radiogroup" aria-label="Kesim">
-          <button type="button" role="radio" data-mode="keep" aria-checked="true" title="Başlangıç ile bitiş arası kalır" disabled>Tut</button>
-          <button type="button" role="radio" data-mode="remove" aria-checked="false" title="Başlangıç ile bitiş arası silinir, kalan parçalar birleşir" disabled>Çıkar</button>
-        </div>
-        <input id="inTime" class="time" type="text" inputmode="decimal" spellcheck="false" aria-label="Başlangıç zamanı" title="Başlangıç (I)" value="0:00.00" disabled>
-        <span class="dash" aria-hidden="true">–</span>
-        <input id="outTime" class="time" type="text" inputmode="decimal" spellcheck="false" aria-label="Bitiş zamanı" title="Bitiş (O)" value="0:00.00" disabled>
-      </div>
-
-      <div class="save">
-        <span class="summary" aria-live="polite">
+      <div class="ctl-left">
+        <div class="readout">
+          <div class="clock"><span id="tNow">0:00.00</span><span class="of" id="tTotal">0:00.00</span></div>
+          <span class="summary" aria-live="polite">
           <span id="sumDur">–</span>
           <span id="sumSize"></span>
           <span class="flags" id="sumFlags"></span>
         </span>
+        </div>
+      </div>
+
+      <div class="ctl-mid">
+        <div class="seg" role="radiogroup" aria-label="Kesim">
+          <button type="button" role="radio" data-mode="keep" aria-checked="true" title="Başlangıç ile bitiş arası kalır" disabled>Tut</button>
+          <button type="button" role="radio" data-mode="remove" aria-checked="false" title="Başlangıç ile bitiş arası silinir, kalan parçalar birleşir" disabled>Çıkar</button>
+        </div>
+        <span class="vsep" aria-hidden="true"></span>
+        <input id="inTime" class="time" type="text" inputmode="decimal" spellcheck="false" aria-label="Başlangıç zamanı" title="Başlangıç (I)" value="0:00.00" disabled>
+        <button id="btnPlay" class="playbtn" type="button" aria-label="Oynat" title="Oynat (Boşluk)" disabled>
+        <svg class="i-play" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 3.8v12.4L16 10z" fill="currentColor"/></svg>
+        <svg class="i-pause" viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="4" width="3.4" height="12" rx="1" fill="currentColor"/><rect x="11.6" y="4" width="3.4" height="12" rx="1" fill="currentColor"/></svg>
+      </button>
+        <input id="outTime" class="time" type="text" inputmode="decimal" spellcheck="false" aria-label="Bitiş zamanı" title="Bitiş (O)" value="0:00.00" disabled>
+      </div>
+
+      <div class="ctl-right save">
         <div class="menu-wrap">
           <button id="btnMenu" class="iconbtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu" title="Diğer">
             <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4.5" cy="10" r="1.6" fill="currentColor"/><circle cx="10" cy="10" r="1.6" fill="currentColor"/><circle cx="15.5" cy="10" r="1.6" fill="currentColor"/></svg>
