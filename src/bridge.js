@@ -141,6 +141,7 @@
   // ---- Önizleme kopyası ----
   let proxyJob = 0;
   let proxyToken = 0;
+  const proxyCache = new Map(); // dosya yolu → { key: 'boyut:zaman', out }
 
   // ---- Dışa aktarma ----
   let exportJob = 0;
@@ -265,7 +266,8 @@
       }
     },
 
-    thumbs: async ({ file, duration, count, height }) => {
+    // Küçük resimler hazır oldukça onThumb(i, src) ile tek tek verilir; şerit hepsini beklemeden dolar.
+    thumbs: async ({ file, duration, count, height, onThumb }) => {
       const times = Array.from({ length: count }, (_, i) => Math.min(duration - 0.05, ((i + 0.5) / count) * duration));
       const out = new Array(count).fill(null);
       let next = 0;
@@ -276,15 +278,25 @@
             const { stdout } = await capture(C.thumbArgs(file, Math.max(0, times[i]), height), { binary: true, timeoutMs: 20000 });
             if (stdout.length > 140) out[i] = 'data:image/jpeg;base64,' + stdout;
           } catch (_) { /* bu kareyi atla */ }
+          if (out[i] && onThumb) onThumb(i, out[i]);
         }
       };
-      await Promise.all([worker(), worker(), worker()]);
+      // Her ffmpeg tek iş parçacığıyla çalışır; birkaçı aynı anda koşunca toplamda daha çabuk biter.
+      const n = Math.max(2, Math.min(6, Math.floor((navigator.hardwareConcurrency || 4) / 2) + 1));
+      await Promise.all(Array.from({ length: n }, worker));
       return out;
     },
 
     proxy: async ({ file, info }) => {
       await kill(proxyJob);
       const token = ++proxyToken;
+      // Aynı dosya (aynı boyut ve değişiklik zamanı) bu oturumda zaten hazırlandıysa o kopya kullanılır:
+      // üzerine kaydettikten sonra geri alınca ya da dosyayı yeniden açınca baştan kodlanmaz.
+      const st = await invoke('fs_stat', { path: file }).catch(() => null);
+      const key = st ? `${st.size}:${st.modified}` : null;
+      const hit = key && proxyCache.get(file);
+      if (hit && hit.key === key && (await exists(hit.out))) return { ok: true, url: fileUrl(hit.out) };
+      if (token !== proxyToken) return { ok: false, canceled: true };
       const root = await invoke('temp_root');
       const out = P.join(root, `onizleme-${token}.mp4`);
       try {
@@ -294,6 +306,7 @@
           onJob: (j) => { proxyJob = j; }
         });
         if (token !== proxyToken) return { ok: false, canceled: true };
+        if (key) proxyCache.set(file, { key, out });
         return { ok: true, url: fileUrl(out) };
       } catch (e) {
         return { ok: false, canceled: token !== proxyToken || !!(e && e.killed), error: C.friendlyError(errObj(e)) };

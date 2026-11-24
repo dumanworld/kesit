@@ -102,6 +102,22 @@ async function t(name, fn) {
   await run('hızlı: tut (kayıpsız)', { input: L, output: o('h.mp4'), info: land, start: 2, end: 6, mode: 'keep', quality: 'fast' }, { dur: 4, tol: 2.1, codec: 'h264', audio: true, fastTol: true });
   await run('hızlı: çıkar (parçala + birleştir)', { input: L, output: o('i.mp4'), info: land, start: 4, end: 6, mode: 'remove', quality: 'fast' }, { dur: 8, tol: 2.1, audio: true, fastTol: true });
   await run('hızlı: ProRes .mov çıkar, Türkçe ad', { input: tr, output: o("hızlı 'ş'.mov"), info: prores, start: 1, end: 2, mode: 'remove', quality: 'fast' }, { dur: 2, tol: 0.3, fastTol: true });
+  await t('tamamı kalıyor ve yalnız ses kaldırılıyorsa yeniden kodlamaz', () => {
+    const plan = F.buildExportPlan({ input: L, output: o('m.mp4'), info: land, segments: [[0, land.duration]], quality: 'precise', mute: true, tmpDir: OUT });
+    assert.strictEqual(plan.quality, 'fast');
+    assert(plan.steps[0].args.includes('copy'));
+    // HDR (SDR'ye çevrilir) ya da ProRes kaynakta yine kodlanır
+    const pr = F.buildExportPlan({ input: tr, output: o('m2.mp4'), info: prores, segments: [[0, prores.duration]], quality: 'precise', mute: true, tmpDir: OUT });
+    assert.strictEqual(pr.quality, 'precise');
+    const cut = F.buildExportPlan({ input: L, output: o('m3.mp4'), info: land, segments: [[1, land.duration]], quality: 'precise', mute: true, tmpDir: OUT });
+    assert.strictEqual(cut.quality, 'precise');
+  });
+  await run('yalnız ses kaldır: kayıpsız kopya, süre tam', { input: L, output: o('m4.mp4'), info: land, segments: [[0, land.duration]], quality: 'precise', mute: true }, { dur: 10, w: 1920, h: 1080, audio: false, codec: 'h264' });
+  await run('döndürülmüş, yalnız ses kaldır: kopya döndürmeyi korur', { input: path.join(M, 'rot.mp4'), output: o('m5.mp4'), info: rot, segments: [[0, rot.duration]], quality: 'precise', mute: true }, { audio: false });
+  await t('kopyada döndürme bilgisi duruyor', () => {
+    const side = ffprobe(o('m5.mp4')).side || [];
+    assert(side.some((d) => Math.abs(d.rotation) === 90), JSON.stringify(side));
+  });
   await run('hızlı istense de kırpma varsa hassasa geçer', { input: L, output: o('j.mp4'), info: land, start: 0, end: 2, mode: 'keep', quality: 'fast', crop: { x: 0, y: 0, w: 0.5625, h: 1, ratio: 1 } }, { dur: 2, w: 1080, h: 1080 });
 
   await t('kare: PNG + kırpma', async () => {

@@ -196,27 +196,36 @@ async fn ff_capture(
             .map_err(spawn_err)?;
         let mut so = child.stdout.take().ok_or("stdout yok")?;
         let mut se = child.stderr.take().ok_or("stderr yok")?;
+        // Çıktı akışları kapanınca (ffmpeg bitince) hemen dönülür; aralıklarla yoklama yapılmaz.
+        let (tx, rx) = std::sync::mpsc::channel::<()>();
+        let tx2 = tx.clone();
         let t1 = std::thread::spawn(move || {
             let mut b = Vec::new();
             let _ = so.read_to_end(&mut b);
+            let _ = tx.send(());
             b
         });
         let t2 = std::thread::spawn(move || {
             let mut b = Vec::new();
             let _ = se.read_to_end(&mut b);
+            let _ = tx2.send(());
             b
         });
         let deadline = Instant::now() + Duration::from_millis(timeout_ms.unwrap_or(30000));
-        let status = loop {
-            if let Some(s) = child.try_wait().map_err(|e| e.to_string())? {
-                break Some(s);
+        let mut closed = 0;
+        while closed < 2 {
+            let left = deadline.saturating_duration_since(Instant::now());
+            match rx.recv_timeout(left) {
+                Ok(()) => closed += 1,
+                Err(_) => break,
             }
-            if Instant::now() > deadline {
-                let _ = child.kill();
-                let _ = child.wait();
-                break None;
-            }
-            std::thread::sleep(Duration::from_millis(15));
+        }
+        let status = if closed < 2 {
+            let _ = child.kill();
+            let _ = child.wait();
+            None
+        } else {
+            Some(child.wait().map_err(|e| e.to_string())?)
         };
         let out = t1.join().unwrap_or_default();
         let err = t2.join().unwrap_or_default();
@@ -240,6 +249,8 @@ async fn ff_capture(
 struct Stat {
     size: u64,
     is_file: bool,
+    /// Son değişiklik zamanı (ms); önizleme kopyasının hâlâ geçerli olup olmadığını anlamak için.
+    modified: u64,
 }
 
 #[tauri::command]
@@ -249,7 +260,16 @@ fn fs_exists(path: String) -> bool {
 
 #[tauri::command]
 fn fs_stat(path: String) -> Option<Stat> {
-    std::fs::metadata(&path).ok().map(|m| Stat { size: m.len(), is_file: m.is_file() })
+    std::fs::metadata(&path).ok().map(|m| Stat {
+        size: m.len(),
+        is_file: m.is_file(),
+        modified: m
+            .modified()
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0),
+    })
 }
 
 #[tauri::command]

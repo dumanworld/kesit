@@ -83,6 +83,14 @@
 
   const PROGRESS = ['-progress', 'pipe:1', '-nostats'];
 
+  // Hassas kayıt yerine akış kopyalamaya geçmek güvenli mi: hedef kap bu kodekleri sorunsuz taşıyabilmeli.
+  const COPY_SAFE_FORMAT = new Set(['mov', 'matroska']);
+  const COPY_SAFE_OUT = new Set(['.mp4', '.mov', '.m4v', '.mkv']);
+  function canCopyTo(info, withAudio, outExt) {
+    return COPY_SAFE_FORMAT.has(info.format) && COPY_SAFE_OUT.has(outExt) &&
+      /^(h264|hevc)$/.test(info.videoCodec) && (!withAudio || /^(aac|mp3)$/.test(info.audioCodec));
+  }
+
   // Dışa aktarma planı: sırayla çalıştırılacak ffmpeg adımları.
   // opts: { input, output, info, segments: [[a, b], …] | (start, end, mode: 'keep'|'remove'), quality: 'precise'|'fast',
   //         crop: null|{x,y,w,h,ratio}, mute, resize, tmpDir }
@@ -93,7 +101,7 @@
     const end = Math.max(start, Math.min(opts.end, D));
     const withAudio = info.hasAudio && !opts.mute;
     const needsEncode = !!opts.crop || !!opts.resize || !!opts.overlay;
-    const quality = needsEncode ? 'precise' : opts.quality;
+    let quality = needsEncode ? 'precise' : opts.quality;
     const { vf, outW, outH } = videoFilter(opts);
     const EPS = 0.05;
 
@@ -119,6 +127,11 @@
     }
     segments = segments.filter(([a, b]) => b - a > 0.01);
     if (!segments.length) throw new Error('Çıktıda kalacak bir bölüm yok. Film şeridinde en az bir parça bırak.');
+
+    // Videonun tamamı kalıyorsa ve görüntüye dokunan bir şey yoksa (ör. yalnızca ses kaldırıldı) yeniden
+    // kodlamaya gerek yok: kesim noktası olmadığından akış kopyalama hem kayıpsız hem tam doğru, hem de anında biter.
+    const whole = segments.length === 1 && segments[0][0] <= EPS && segments[0][1] >= D - EPS;
+    if (quality === 'precise' && whole && !needsEncode && !vf && canCopyTo(info, withAudio, path.extname(output).toLowerCase())) quality = 'fast';
 
     const outDuration = segments.reduce((s, [a, b]) => s + (b - a), 0);
     const ext = path.extname(output).toLowerCase();
@@ -210,8 +223,8 @@
   }
 
   function thumbArgs(input, time, height) {
-    return ['-hide_banner', '-loglevel', 'error', '-ss', fmt(time), '-i', input, '-frames:v', '1',
-      '-vf', `scale=-2:${height}`, '-q:v', '5', '-f', 'image2pipe', '-c:v', 'mjpeg', 'pipe:1'];
+    return ['-hide_banner', '-loglevel', 'error', '-threads', '1', '-ss', fmt(time), '-i', input, '-frames:v', '1',
+      '-vf', `scale=-2:${height}`, '-threads', '1', '-q:v', '5', '-f', 'image2pipe', '-c:v', 'mjpeg', 'pipe:1'];
   }
 
   function proxyArgs(input, output, info) {

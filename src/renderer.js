@@ -374,21 +374,26 @@
     const trackW = el.track.clientWidth || 800;
     const thumbW = el.track.clientHeight * (info.width / info.height);
     const count = clamp(Math.ceil(trackW / Math.max(24, thumbW)), 4, 40);
-    const imgs = await api.thumbs({ file: state.file, duration: state.duration, count, height: 120 });
-    if (token !== state.loadToken) return;
+    // Önce yer tutucular konur; her küçük resim hazır olunca kendi yerine geçer.
+    const slots = [];
     const frag = document.createDocumentFragment();
-    for (const src of imgs) {
-      if (src) {
-        const img = document.createElement('img');
-        img.src = src; img.alt = ''; img.draggable = false;
-        frag.appendChild(img);
-      } else {
-        const ph = document.createElement('div');
-        ph.className = 'ph';
-        frag.appendChild(ph);
-      }
+    for (let i = 0; i < count; i++) {
+      const ph = document.createElement('div');
+      ph.className = 'ph';
+      slots.push(ph);
+      frag.appendChild(ph);
     }
     el.strip.appendChild(frag);
+    await api.thumbs({
+      file: state.file, duration: state.duration, count, height: 120,
+      onThumb: (i, src) => {
+        if (token !== state.loadToken || !slots[i].isConnected) return;
+        const img = document.createElement('img');
+        img.src = src; img.alt = ''; img.draggable = false;
+        slots[i].replaceWith(img);
+        slots[i] = img;
+      }
+    });
   }
 
   // ---------- Oynatma ----------
@@ -560,21 +565,63 @@
     node.setAttribute('aria-valuenow', value.toFixed(2));
     node.setAttribute('aria-valuetext', fmtTime(value));
   }
+  // Oynatırken her karede çağrılır: sayfa ölçüsünü yeniden hesaplatmasın diye şerit genişliği ve balon
+  // genişliği önbellekte tutulur (rakamlar eşit genişlikte, balon genişliği yalnız yazının uzunluğuyla değişir).
+  const phPill = $('phTime');
+  const phCache = { trackW: 0, len: -1, half: 0, shift: null };
+  const resetPlayheadCache = () => { phCache.trackW = 0; phCache.len = -1; phCache.shift = null; };
   function renderPlayhead() {
     el.playhead.style.left = pct(state.now);
-    el.tNow.textContent = fmtTime(resultTime(state.now));
-    const pill = $('phTime');
-    pill.textContent = fmtTime(state.now);
+    const tn = fmtTime(resultTime(state.now));
+    if (el.tNow.textContent !== tn) el.tNow.textContent = tn;
+    const txt = fmtTime(state.now);
+    if (phPill.textContent !== txt) phPill.textContent = txt;
+    if (!phCache.trackW) phCache.trackW = el.track.clientWidth;
+    if (phCache.len !== txt.length) {
+      phCache.half = phPill.offsetWidth / 2;
+      phCache.len = phCache.half ? txt.length : -1; // görünmüyorsa ölçü sayılmaz
+    }
     // Başta ve sonda balon şeridin dışına taşmasın: yarı genişliği kadar içeri kaydır
-    const tw = el.track.clientWidth, x = tw * (state.duration ? state.now / state.duration : 0), half = pill.offsetWidth / 2;
+    const tw = phCache.trackW, x = tw * (state.duration ? state.now / state.duration : 0), half = phCache.half;
     const shift = tw ? Math.max(half - x, 0) - Math.max(x + half - tw, 0) : 0;
-    pill.style.transform = `translateX(calc(-50% + ${shift}px))`;
-    setSliderAria(el.playhead, state.now, state.duration);
+    if (shift !== phCache.shift) {
+      phCache.shift = shift;
+      phPill.style.transform = `translateX(calc(-50% + ${shift}px))`;
+    }
+    // Ekran okuyucu değerleri oynarken her karede değil, durunca güncellenir
+    if (v.paused || state.drag) setSliderAria(el.playhead, state.now, state.duration);
   }
   // Film şeridi: tutulan parçalar açık, atılan aralıklar soluk; her parçanın iki ucunda tutamaç
   function renderMarks() {
-    const frag = document.createDocumentFragment();
     const D = state.duration;
+    const box = $('segs');
+    // Aynı sayıda parça ve boşluk varsa (ör. bir ucu sürüklerken) öğeler yeniden kurulmaz, yalnızca yerleri güncellenir.
+    const want = [];
+    let p0 = 0;
+    state.segs.forEach(([a, b]) => { if (a - p0 > 0) want.push('gap'); want.push('handle', 'handle'); p0 = b; });
+    if (D - p0 > 0) want.push('gap');
+    const kids = box.children;
+    if (kids.length === want.length && want.every((k, j) => kids[j].classList.contains(k))) {
+      let j = 0, prev = 0;
+      const place = (node, prop, val) => { if (node.style[prop] !== val) node.style[prop] = val; };
+      const gapAt = (a, b) => {
+        if (b - a <= 0) return;
+        const g = kids[j++];
+        place(g, 'left', pct(a)); place(g, 'width', pct(b - a));
+      };
+      state.segs.forEach(([a, b]) => {
+        gapAt(prev, a);
+        prev = b;
+        for (const t of [a, b]) {
+          const h = kids[j++];
+          place(h, 'left', pct(t));
+          setSliderAria(h, t, D);
+        }
+      });
+      gapAt(prev, D);
+      return;
+    }
+    const frag = document.createDocumentFragment();
     let prev = 0;
     const gap = (a, b) => {
       if (b - a <= 0) return;
@@ -601,7 +648,7 @@
       }
     });
     gap(prev, D);
-    $('segs').replaceChildren(frag);
+    box.replaceChildren(frag);
   }
   function renderRuler() {
     const D = state.duration;
@@ -1971,7 +2018,7 @@
   let resizeRaf = null;
   const ro = new ResizeObserver(() => {
     if (resizeRaf) return;
-    resizeRaf = requestAnimationFrame(() => { resizeRaf = null; layoutFrame(); renderRuler(); });
+    resizeRaf = requestAnimationFrame(() => { resizeRaf = null; resetPlayheadCache(); layoutFrame(); renderRuler(); renderPlayhead(); });
   });
   ro.observe(el.viewport);
   ro.observe(el.track);
