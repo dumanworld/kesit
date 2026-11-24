@@ -613,6 +613,7 @@
     cancelPreview();
     v.pause();
     el.track.setPointerCapture(e.pointerId);
+    el.track.parentElement.classList.add('scrubbing');
     if (state.drag.kind !== 'range') applyDrag(e.clientX);
   });
   el.ruler.addEventListener('pointerdown', (e) => {
@@ -622,6 +623,7 @@
     cancelPreview();
     v.pause();
     el.ruler.setPointerCapture(e.pointerId);
+    el.track.parentElement.classList.add('scrubbing');
     applyDrag(e.clientX);
   });
   const rulerHover = $('rulerHover');
@@ -639,6 +641,7 @@
     const d = state.drag;
     if (!d) return;
     state.drag = null;
+    el.track.parentElement.classList.remove('scrubbing');
     pending.hidden = true;
     $('edgeTip').hidden = true;
     if (d.kind === 'range') {
