@@ -14,8 +14,63 @@
     const n = parseInt(m[1], 16);
     return ((n & 0xff) << 16) | (n & 0xff00) | ((n >> 16) & 0xff); // 0x00BBGGRR
   };
+  // ---------- Tema renkleri: vurgu rengi ve zemin tonu (Görünüm > Tema renkleri) ----------
+  // Seçilen renk her iki temada okunur kalacak şekilde koyulaştırılır / açılır (en az 4,5:1 kontrast).
+  const C = {
+    rgb: (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; },
+    hex: (c) => '#' + c.map((x) => Math.round(Math.max(0, Math.min(255, x))).toString(16).padStart(2, '0')).join(''),
+    mix: (a, b, t) => C.hex(C.rgb(a).map((x, i) => x + (C.rgb(b)[i] - x) * t)),
+    lum: (h) => { const [r, g, b] = C.rgb(h).map((v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; },
+    con: (a, b) => { const x = C.lum(a), y = C.lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); },
+    // c'yi hedefe (siyah/beyaz) doğru, tüm zeminlerde en az `min` kontrast olana kadar kaydırır
+    fit: (c, toward, against, min = 4.5) => { let t = 0, out = c; while (t < 1 && against.some((b) => C.con(out, b) < min)) { t += 0.04; out = C.mix(c, toward, t); } return out; }
+  };
+  const ACCENTS = [['#005fb8', 'Mavi'], ['#6b3fc4', 'Mor'], ['#b4287a', 'Pembe'], ['#c42b1c', 'Kırmızı'], ['#b85000', 'Turuncu'], ['#107c41', 'Yeşil'], ['#00788a', 'Turkuaz'], ['#4c5866', 'Grafit']];
+  const TONES = { neutral: ['Nötr', null], warm: ['Sıcak', '#ff9f43'], cool: ['Soğuk', '#4a90ff'] };
+  const BASE = {
+    light: { bg: '#f3f3f3', stage: '#e6e6e6', surface: '#fbfbfb', raised: '#ffffff', field: '#ffffff' },
+    dark: { bg: '#202020', stage: '#181818', surface: '#2d2d2d', raised: '#2c2c2c', field: '#1e1e1e' }
+  };
+  let colors = { accent: null, tone: 'neutral' };
+  try { Object.assign(colors, JSON.parse(localStorage.getItem('kesit.colors') || '{}')); } catch (_) { /* depolama yok */ }
+  function applyColors() {
+    const st = document.documentElement.style, dark = theme === 'dark';
+    const names = ['--accent', '--accent-hover', '--accent-soft', '--accent-ink', '--primary', '--primary-hover', '--primary-press', '--primary-ink', '--bg', '--stage', '--surface', '--raised', '--field', '--veil'];
+    names.forEach((n) => st.removeProperty(n));
+    const base = BASE[dark ? 'dark' : 'light'];
+    const tint = TONES[colors.tone] && TONES[colors.tone][1];
+    const surf = {};
+    for (const [k, v] of Object.entries(base)) surf[k] = tint ? C.mix(v, tint, dark ? 0.035 : (k === 'raised' || k === 'field' ? 0.02 : 0.05)) : v;
+    if (tint) {
+      for (const [k, v] of Object.entries(surf)) st.setProperty('--' + k, v);
+      st.setProperty('--veil', `rgba(${C.rgb(surf.bg).join(', ')}, .9)`);
+    }
+    if (!colors.accent || !/^#[0-9a-f]{6}$/i.test(colors.accent)) return;
+    const a = colors.accent;
+    if (!dark) {
+      const t = C.fit(a, '#000000', ['#ffffff', surf.bg, surf.stage]);
+      st.setProperty('--accent', t);
+      st.setProperty('--accent-hover', C.mix(t, '#ffffff', 0.1));
+      st.setProperty('--accent-soft', C.mix(t, '#ffffff', 0.9));
+      st.setProperty('--accent-ink', '#ffffff');
+    } else {
+      const t = C.fit(a, '#ffffff', [surf.bg, surf.raised, surf.stage]);
+      const fill = C.fit(a, '#000000', ['#ffffff']);
+      st.setProperty('--accent', t);
+      st.setProperty('--accent-hover', C.mix(t, '#000000', 0.08));
+      st.setProperty('--accent-soft', `rgba(${C.rgb(t).join(', ')}, .16)`);
+      st.setProperty('--accent-ink', '#000000');
+      st.setProperty('--primary', fill);
+      st.setProperty('--primary-hover', C.mix(fill, '#ffffff', 0.08));
+      st.setProperty('--primary-press', C.mix(fill, '#000000', 0.15));
+      st.setProperty('--primary-ink', '#ffffff');
+    }
+  }
+  function saveColors() { try { localStorage.setItem('kesit.colors', JSON.stringify(colors)); } catch (_) { /* depolama yok */ } }
+
   const applyTheme = () => {
     document.documentElement.dataset.theme = theme;
+    applyColors();
     const cs = getComputedStyle(document.documentElement);
     const bg = colorRef(cs.getPropertyValue('--bg')), fg = colorRef(cs.getPropertyValue('--text'));
     if (api.setTitlebar && bg !== null && fg !== null) api.setTitlebar(theme === 'dark', bg, fg);
@@ -1965,6 +2020,51 @@
   $('infoClose').addEventListener('click', hideInfo);
   $('infoModal').addEventListener('pointerdown', (e) => { if (e.target === e.currentTarget) hideInfo(); });
   $('infoModal').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); hideInfo(); } });
+  function showColors() {
+    const wrap = document.createElement('div');
+    wrap.className = 'colors';
+    const section = (title) => { const h = document.createElement('div'); h.className = 'colors-h'; h.textContent = title; wrap.append(h); const row = document.createElement('div'); row.className = 'swatches'; wrap.append(row); return row; };
+    const refresh = () => {
+      wrap.querySelectorAll('[data-accent]').forEach((b) => b.setAttribute('aria-checked', String((colors.accent || '#005fb8').toLowerCase() === b.dataset.accent)));
+      wrap.querySelectorAll('[data-tone]').forEach((b) => b.setAttribute('aria-checked', String(colors.tone === b.dataset.tone)));
+      const custom = !ACCENTS.some(([h]) => h === (colors.accent || '#005fb8').toLowerCase());
+      pick.setAttribute('aria-checked', String(custom));
+      pick.style.setProperty('--sw', colors.accent && custom ? colors.accent : 'transparent');
+    };
+    const set = (patch) => { Object.assign(colors, patch); if (colors.accent === '#005fb8') colors.accent = null; saveColors(); applyTheme(); refresh(); };
+    const acc = section('Vurgu rengi');
+    acc.setAttribute('role', 'radiogroup'); acc.setAttribute('aria-label', 'Vurgu rengi');
+    for (const [hex, name] of ACCENTS) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'swatch'; b.dataset.accent = hex; b.setAttribute('role', 'radio');
+      b.title = name; b.setAttribute('aria-label', name); b.style.setProperty('--sw', hex);
+      b.addEventListener('click', () => set({ accent: hex }));
+      acc.append(b);
+    }
+    const pick = document.createElement('label');
+    pick.className = 'swatch custom'; pick.title = 'Başka bir renk seç'; pick.setAttribute('role', 'radio');
+    const input = document.createElement('input');
+    input.type = 'color'; input.value = colors.accent || '#005fb8'; input.setAttribute('aria-label', 'Başka bir renk seç');
+    input.addEventListener('input', () => set({ accent: input.value.toLowerCase() }));
+    pick.append(input);
+    acc.append(pick);
+    const tone = section('Zemin tonu');
+    tone.classList.add('tones'); tone.setAttribute('role', 'radiogroup'); tone.setAttribute('aria-label', 'Zemin tonu');
+    for (const [key, [name, tint]] of Object.entries(TONES)) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'tone'; b.dataset.tone = key; b.setAttribute('role', 'radio');
+      const dot = document.createElement('i'); dot.style.setProperty('--sw', tint ? C.mix(BASE[theme === 'dark' ? 'dark' : 'light'].bg, tint, 0.35) : 'var(--bg)');
+      b.append(dot, name);
+      b.addEventListener('click', () => set({ tone: key }));
+      tone.append(b);
+    }
+    const reset = document.createElement('button');
+    reset.type = 'button'; reset.className = 'btn quiet colors-reset'; reset.textContent = 'Varsayılana dön';
+    reset.addEventListener('click', () => { input.value = '#005fb8'; set({ accent: null, tone: 'neutral' }); });
+    wrap.append(reset);
+    refresh();
+    showInfo('Tema renkleri', wrap);
+  }
   function showKeys() {
     const dl = document.createElement('dl');
     dl.className = 'mkeys';
@@ -2048,6 +2148,7 @@
       { label: 'Gerçek boyut', keys: 'Ctrl 0', run: () => api.zoomStep(0) },
       '-',
       { label: 'Koyu tema', check: () => theme === 'dark', run: toggleTheme },
+      { label: 'Tema renkleri…', run: showColors, hint: 'Vurgu rengi ve zemin tonu' },
       { label: 'Yalnız kırpılan alanı göster', check: () => !!state.cropView, on: () => hasFile() && !!state.crop, run: toggleCropView, hint: 'Kırpılan kısım pencereyi doldurur' },
       '-',
       { label: 'Sonucu önizle', keys: 'P', run: previewResult, on: hasFile },
