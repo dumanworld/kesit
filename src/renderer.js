@@ -560,8 +560,6 @@
     $('btnCrop').classList.toggle('cropped', cropped && !state.cropEdit);
     $('btnRatio').classList.toggle('active', state.cropEdit);
     $('ratioMenu').hidden = !(state.cropEdit && state.info); // oranlar yalnız kırparken Kırp'ın yanında görünür
-    $('cropBar').classList.toggle('pinned', !!state.cropEdit);
-    $('cutBar').classList.toggle('pinned', !!state.cutEdit);
     $('btnCrop').setAttribute('aria-pressed', String(state.cropEdit));
     $('btnCrop').title = state.cropEdit ? 'Kırpmayı bitir' : 'Kırp: kırpma çerçevesini düzenle';
     $('btnCut').classList.toggle('active', state.cutEdit);
@@ -980,22 +978,32 @@
   document.querySelectorAll('.ratio').forEach((b) => b.addEventListener('click', () => { setRatio(b.dataset.ratio, false); setCropEdit(b.dataset.ratio !== 'orig'); closeRatioMenu(b.matches(':focus-visible')); }));
 
   // Kırp düğmesi kırpmayı açıp kapatır; yanındaki ok oranları açar.
-  // Kırp ve Kes yerinde belirir: fare videonun / film şeridinin üstünde 2 sn kıpırdamadan durunca.
-  // Fare o bölgeden (sahne / alt şerit) çıkınca, mod açık değilse kaybolur.
-  function dwellReveal(area, zone, bar) {
-    let timer = 0, lastX = -1, lastY = -1;
+  // Düğmelere ek olarak: fare videonun üstünde 2 sn kıpırdamadan durursa kırpma tutamaçları,
+  // film şeridinin üstünde durursa kesme tutamaçları belirir (video duruyorken).
+  // Böyle açılan mod, hiçbir şey değiştirilmeden fare o bölgeden çıkınca kendiliğinden kapanır.
+  const DWELL_MS = 2000;
+  function dwellEdit(area, zone, isOn, setOn, snap) {
+    let timer = 0, lastX = -1, lastY = -1, auto = null;
     area.addEventListener('pointermove', (e) => {
-      if (!state.info || e.buttons) { clearTimeout(timer); return; }
       if (Math.abs(e.clientX - lastX) < 3 && Math.abs(e.clientY - lastY) < 3) return; // titremeyi hareket sayma
       lastX = e.clientX; lastY = e.clientY;
       clearTimeout(timer);
-      if (!bar.classList.contains('shown')) timer = setTimeout(() => bar.classList.add('shown'), 2000);
+      if (!state.info || e.buttons || isOn() || state.tool || !v.paused) return;
+      timer = setTimeout(() => {
+        if (isOn() || state.tool || !v.paused || asking || state.exporting) return;
+        setOn(true); auto = snap();
+      }, DWELL_MS);
     });
     area.addEventListener('pointerleave', () => clearTimeout(timer));
-    zone.addEventListener('pointerleave', () => { clearTimeout(timer); bar.classList.remove('shown'); });
+    area.addEventListener('pointerdown', () => clearTimeout(timer));
+    zone.addEventListener('pointerleave', () => {
+      clearTimeout(timer);
+      if (auto !== null && isOn() && snap() === auto) setOn(false);
+      auto = null;
+    });
   }
-  dwellReveal($('viewport'), $('stage'), $('cropBar'));
-  dwellReveal(el.track, document.querySelector('.transport'), $('cutBar'));
+  dwellEdit($('viewport'), $('stage'), () => state.cropEdit, (on) => setCropEdit(on), () => JSON.stringify([state.crop, state.ratioKey]));
+  dwellEdit(el.track, document.querySelector('.transport'), () => state.cutEdit, (on) => setCutEdit(on), () => JSON.stringify(state.segs));
   function toggleCropView() {
     state.cropView = !state.cropView;
     try { localStorage.setItem('kesit.cropView', state.cropView ? '1' : '0'); } catch {}
