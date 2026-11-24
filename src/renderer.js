@@ -38,7 +38,7 @@
 
   const state = {
     file: null, info: null, duration: 0, srcExt: '.mp4',
-    inT: 0, outT: 0, now: 0, segs: [], // segs: kalacak parçalar [[başlangıç, bitiş], …], sıralı ve çakışmasız
+    inT: 0, outT: 0, now: 0, segs: [], cropEdit: false, // segs: kalacak parçalar [[başlangıç, bitiş], …], sıralı ve çakışmasız
     mode: 'keep', quality: 'precise', ratioKey: 'orig', crop: null, mute: false, resize: false,
     proxy: false, proxyFor: null, loadToken: 0, loadTimer: null,
     drag: null, cropDrag: null, pendingSeek: null, preview: null, raf: null,
@@ -347,6 +347,19 @@
   blurClick('btnBack', () => seekTo(snap(state.now - 5)));
   blurClick('btnFwd', () => seekTo(snap(state.now + 5)));
 
+  // Önizleme ses düzeyi: yalnızca editörde dinlerken; kaydedilen dosyayı etkilemez.
+  const volume = $('volume');
+  try { const sv = localStorage.getItem('kesit.volume'); if (sv != null) volume.value = sv; } catch (_) { /* depolama yok */ }
+  const applyVolume = () => {
+    v.volume = volume.value / 100;
+    volume.style.setProperty('--fill', `${volume.value}%`);
+    volume.closest('.volume').classList.toggle('silent', +volume.value === 0);
+  };
+  applyVolume();
+  volume.addEventListener('input', applyVolume);
+  volume.addEventListener('change', () => { try { localStorage.setItem('kesit.volume', volume.value); } catch (_) { /* depolama yok */ } volume.blur(); });
+  volume.addEventListener('keydown', (e) => e.stopPropagation());
+
   // Videodaki konumu, kesilmiş sonuçtaki konuma çevirir (saatte gösterilir).
   function resultTime(t) {
     return state.segs.reduce((s, [a, b]) => s + clamp(t - a, 0, b - a), 0);
@@ -495,7 +508,7 @@
   function renderRuler() {
     const D = state.duration;
     const w = el.track.clientWidth;
-    if (!D || !w) { el.ruler.innerHTML = ''; return; }
+    if (!D || !w) { el.ruler.replaceChildren($('rulerHover')); return; }
     const steps = [0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600];
     const step = steps.find((s) => (s / D) * w >= 72) || 3600;
     const frag = document.createDocumentFragment();
@@ -505,7 +518,7 @@
       s.textContent = fmtShort(t, step);
       frag.appendChild(s);
     }
-    el.ruler.replaceChildren(frag);
+    el.ruler.replaceChildren(frag, $('rulerHover'));
   }
   function renderSummary() {
     if (!state.info) return;
@@ -535,12 +548,13 @@
   }
   function renderOptions() {
     document.querySelectorAll('.ratio').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.ratio === state.ratioKey)));
-    const cropping = state.ratioKey !== 'orig';
-    $('ratioLabel').textContent = cropping ? ({ free: 'Serbest' }[state.ratioKey] || state.ratioKey) : 'Kırp';
-    $('btnCrop').classList.toggle('active', cropping);
-    $('btnRatio').classList.toggle('active', cropping);
-    $('btnCrop').setAttribute('aria-pressed', String(cropping));
-    $('btnCrop').title = cropping ? 'Kırpmayı kapat' : 'Kırp: tıklayınca kırpma çerçevesi açılır';
+    const cropped = !!state.crop;
+    $('ratioLabel').textContent = cropped ? ({ free: 'Kırpıldı' }[state.ratioKey] || state.ratioKey) : 'Kırp';
+    $('btnCrop').classList.toggle('active', state.cropEdit);
+    $('btnCrop').classList.toggle('cropped', cropped && !state.cropEdit);
+    $('btnRatio').classList.toggle('active', state.cropEdit);
+    $('btnCrop').setAttribute('aria-pressed', String(state.cropEdit));
+    $('btnCrop').title = state.cropEdit ? 'Kırpmayı bitir' : 'Kırp: kırpma çerçevesini düzenle';
     const muted = state.mute && state.info && state.info.hasAudio;
     $('btnMute').classList.toggle('muted', !!muted);
     $('btnMute').setAttribute('aria-pressed', String(!!muted));
@@ -599,7 +613,16 @@
     el.ruler.setPointerCapture(e.pointerId);
     applyDrag(e.clientX);
   });
-  el.ruler.addEventListener('pointermove', (e) => { if (state.drag && state.drag.kind === 'seek') applyDrag(e.clientX); });
+  const rulerHover = $('rulerHover');
+  el.ruler.addEventListener('pointermove', (e) => {
+    if (state.drag && state.drag.kind === 'seek') applyDrag(e.clientX);
+    if (!state.info) return;
+    const t = xToTime(e.clientX);
+    rulerHover.hidden = false;
+    rulerHover.style.left = pct(t);
+    rulerHover.firstChild.textContent = fmtTime(t);
+  });
+  el.ruler.addEventListener('pointerleave', () => { rulerHover.hidden = true; });
   el.track.addEventListener('pointermove', (e) => { if (state.drag) applyDrag(e.clientX); });
   const endDrag = (e) => {
     const d = state.drag;
@@ -738,12 +761,15 @@
     });
     el.frameLayer.hidden = false;
     positionAnno((W - w) / 2, (H - h) / 2, w, h);
-    // Kadraj yokken çerçeve videonun tamamını kaplar; yalnızca kenar tutamaçları görünür.
+    // Kırp düğmesi yalnızca düzenlemeyi açar: açıkken tutamaçlar ve ızgara görünür.
+    // Kapalıyken kırpma (varsa) karartmayla gösterilir ama çerçeve tıklamaları videoya bırakır.
     const ghost = !state.crop;
     const c = state.crop || FULL;
+    const edit = state.cropEdit;
     el.crop.classList.toggle('ghost', ghost);
-    el.crop.hidden = ghost; // kırpma kapalıyken çerçeve görünmez; Kırp düğmesiyle açılır
-    el.crop.tabIndex = ghost ? -1 : 0;
+    el.crop.classList.toggle('locked', !edit);
+    el.crop.hidden = ghost && !edit;
+    el.crop.tabIndex = edit && !ghost ? 0 : -1;
     $('btnCropReset').hidden = ghost;
     const P = (n) => `${n * 100}%`;
     Object.assign(el.crop.style, { left: P(c.x), top: P(c.y), width: P(c.w), height: P(c.h) });
@@ -902,15 +928,28 @@
   });
 
   // ---------- Panel ----------
-  document.querySelectorAll('.ratio').forEach((b) => b.addEventListener('click', () => { setRatio(b.dataset.ratio, false); closeRatioMenu(b.matches(':focus-visible')); }));
+  document.querySelectorAll('.ratio').forEach((b) => b.addEventListener('click', () => { setRatio(b.dataset.ratio, false); setCropEdit(b.dataset.ratio !== 'orig'); closeRatioMenu(b.matches(':focus-visible')); }));
 
   // Kırp düğmesi kırpmayı açıp kapatır; yanındaki ok oranları açar.
+  function setCropEdit(on) {
+    on = !!on && !!state.info;
+    if (state.cropEdit === on) return;
+    state.cropEdit = on;
+    if (on && state.tool) setTool(state.tool); // kırparken çizim aracı kapanır
+    renderOptions();
+    layoutFrame();
+  }
   $('btnCrop').addEventListener('click', (e) => {
     if (e.detail > 0) e.currentTarget.blur();
-    if (!state.info) return;
-    setRatio(state.ratioKey === 'orig' ? lastRatio : 'orig', false);
-    scheduleCommit();
+    setCropEdit(!state.cropEdit);
   });
+  // Kırpma düzenlenirken başka bir yere tıklamak düzenlemeyi kapatır (kırpma ayarı korunur).
+  document.addEventListener('pointerdown', (e) => {
+    if (!state.cropEdit) return;
+    if (e.target.closest('.crop, .ratio-wrap, .appmenu-wrap, .modal, .toast')) return;
+    if (e.target.closest('.viewport')) state.annoClickGuard = true; // bu tıklama oynatmayı başlatmasın
+    setCropEdit(false);
+  }, true);
   // Ses düğmesi: kaydederken sesi kaldır / bırak
   $('btnMute').addEventListener('click', (e) => {
     if (e.detail > 0) e.currentTarget.blur();
@@ -1104,6 +1143,7 @@
   }
   function setTool(t) {
     state.tool = state.tool === t ? null : t;
+    if (state.tool && state.cropEdit) { state.cropEdit = false; renderOptions(); layoutFrame(); }
     document.querySelectorAll('.tool[data-tool]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tool === state.tool)));
     el.app.classList.toggle('drawing', !!state.tool);
     if (state.tool) { state.sel = null; drawAnnos(); }
@@ -1178,7 +1218,7 @@
     const p = await api.pickImage();
     if (p) addImageFile(p);
   }
-  $('btnPaste').addEventListener('click', (e) => { if (e.detail > 0) e.currentTarget.blur(); pickImage(); });
+  $('btnPaste').addEventListener('click', (e) => { if (e.detail > 0) e.currentTarget.blur(); setCropEdit(false); pickImage(); });
 
   // Videonun üzerindeki basışlar: önce çizim katmanı bakar (yakalama evresi); işi yoksa kadraja / oynatmaya geçer.
   el.viewport.addEventListener('pointerdown', (e) => {
@@ -1640,6 +1680,7 @@
       return;
     }
     if ((e.key === 'Delete' || e.key === 'Backspace') && state.sel) { e.preventDefault(); deleteSelected(); return; }
+    if (e.key === 'Escape' && state.cropEdit) { e.preventDefault(); setCropEdit(false); return; }
     if (e.key === 'Escape' && (state.tool || state.sel)) {
       if (state.tool) setTool(state.tool); else selectAnno(null);
       return;
@@ -1698,7 +1739,7 @@
     hideStageMsg();
     if (state.tool) setTool(state.tool);
     clearAnnos();
-    Object.assign(state, { file: null, info: null, duration: 0, inT: 0, outT: 0, segs: [], now: 0, crop: null, mode: 'keep', proxy: false });
+    Object.assign(state, { file: null, info: null, duration: 0, inT: 0, outT: 0, segs: [], cropEdit: false, now: 0, crop: null, mode: 'keep', proxy: false });
     el.app.dataset.state = 'empty';
     document.querySelectorAll('.fb-center').forEach((n) => { n.inert = true; });
     el.strip.innerHTML = '';
