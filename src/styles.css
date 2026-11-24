@@ -768,3 +768,73 @@ body.dragging .drop-hint { display: flex; }
 .crop.locked.peek:not(.ghost) { outline: 1px solid rgba(255, 255, 255, .6); outline-offset: -1px; }
 /* Film şeridinin üstüne gelince parça uç tutamaçları hemen görünür (Kes kapalıyken de sürüklenebilir) */
 .track.peek .segs .handle { display: grid; animation: tip-in .15s ease both; }
+
+/* ---------- 20. tur: düğmeler (Windows 11 Fluent'e yakın: hafif kabarık, yumuşak köşe, net basılma) ---------- */
+:root {
+  --r-btn: 6px;
+  --btn-bg: #ffffff; --btn-bg-hover: #f9f9f9; --btn-bg-press: #f3f3f3;
+  --btn-stroke: rgba(0, 0, 0, .075); --btn-stroke-bottom: rgba(0, 0, 0, .19);
+  --btn-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+  --acc-stroke: rgba(255, 255, 255, .1); --acc-stroke-bottom: rgba(0, 0, 0, .4);
+}
+:root[data-theme="dark"] {
+  --btn-bg: rgba(255, 255, 255, .065); --btn-bg-hover: rgba(255, 255, 255, .09); --btn-bg-press: rgba(255, 255, 255, .035);
+  --btn-stroke: rgba(255, 255, 255, .07); --btn-stroke-bottom: rgba(255, 255, 255, .03);
+  --btn-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+  --acc-stroke: rgba(255, 255, 255, .14); --acc-stroke-bottom: rgba(0, 0, 0, .35);
+}
+
+.btn, .fb-left .dropbtn:not(.chevbtn) {
+  height: 32px; border-radius: var(--r-btn);
+  background: var(--btn-bg); color: var(--text);
+  border: 1px solid var(--btn-stroke); border-bottom-color: var(--btn-stroke-bottom);
+  box-shadow: var(--btn-shadow);
+  font-size: 13px; font-weight: 500;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, transform 80ms ease;
+}
+.btn:hover:not(:disabled), .fb-left .dropbtn:not(.chevbtn):hover { background: var(--btn-bg-hover); }
+.btn:active:not(:disabled), .fb-left .dropbtn:not(.chevbtn):active {
+  background: var(--btn-bg-press); color: var(--text-2);
+  border-bottom-color: var(--btn-stroke); box-shadow: none;
+}
+.btn:disabled { color: var(--text-disabled); box-shadow: none; }
+.btn.quiet { box-shadow: none; border-color: transparent; background: transparent; }
+.btn.quiet:hover:not(:disabled) { background: var(--hover); }
+.btn.quiet:active:not(:disabled) { background: var(--pressed); border-color: transparent; }
+
+.btn.primary {
+  background: var(--accent); color: var(--accent-ink); font-weight: 600;
+  border-color: var(--acc-stroke); border-bottom-color: var(--acc-stroke-bottom);
+}
+.btn.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 90%, var(--bg)); border-color: var(--acc-stroke); border-bottom-color: var(--acc-stroke-bottom); }
+.btn.primary:active:not(:disabled) { background: color-mix(in srgb, var(--accent) 80%, var(--bg)); color: color-mix(in srgb, var(--accent-ink) 80%, transparent); border-bottom-color: var(--acc-stroke); }
+.btn.primary:disabled { background: var(--disabled-fill); color: var(--bg); border-color: transparent; }
+
+/* Kırp / Kes: simge + yazı, açıkken mavi dolgu yerine yumuşak mavi zemin ve mavi çizgi */
+.fb-left #btnCrop, .fb-left #btnCut { min-width: 104px; padding: 0 16px; gap: 8px; }
+.fb-left .dropbtn svg { width: 16px; height: 16px; }
+.fb-left .dropbtn.active:not(.chevbtn), .fb-left .dropbtn[aria-pressed="true"]:not(.chevbtn) {
+  background: var(--accent-soft); color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  box-shadow: none;
+}
+.fb-left .dropbtn.cropped:not(.active) { color: var(--accent); }
+.fb-left .dropbtn.iconly { width: 32px; min-width: 0; padding: 0; justify-content: center; }
+
+/* Kaydet + kopyala: tek gövde */
+.split { border-radius: var(--r-btn); box-shadow: var(--btn-shadow); }
+.split .btn { box-shadow: none; }
+.split .btn:first-child { border-radius: var(--r-btn) 0 0 var(--r-btn); }
+.split .btn:last-child { border-radius: 0 var(--r-btn) var(--r-btn) 0; }
+.split .btn.primary + .btn.primary { border-left: 1px solid color-mix(in srgb, var(--accent-ink) 30%, transparent); }
+.split:has(#btnExport:disabled) .btn { background: var(--btn-bg); border: 1px solid var(--btn-stroke); border-bottom-color: var(--btn-stroke-bottom); }
+.split:has(#btnExport:disabled) #btnExport { border-right: 0; }
+.split:has(#btnExport:disabled) #btnCopy { border-left: 1px solid var(--btn-stroke); }
+
+/* Oynat: biraz daha yumuşak köşe ve hafif gölge */
+.playbtn { border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, .18), 0 0 0 1px rgba(0, 0, 0, .04); }
+.playbtn:active:not(:disabled) { transform: scale(.95); }
+
+/* Simge düğmeleri: aynı köşe yuvarlaklığı */
+.iconbtn, .fb-right .tool { border-radius: var(--r-btn); }
