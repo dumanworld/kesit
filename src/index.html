@@ -48,7 +48,10 @@
           <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="5.5" cy="14.5" r="2.3" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="14.5" cy="14.5" r="2.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7.2 12.8L14.5 3.5M12.8 12.8L5.5 3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           <span>Kes</span>
         </button>
-        <span class="vsep" aria-hidden="true"></span>
+      </div>
+    </div>
+    <div class="fb-right">
+      <div class="fb-center" inert>
         <div class="tools" role="group" aria-label="Çizim">
       <button type="button" class="tool" data-tool="arrow" aria-pressed="false" aria-label="Ok" title="Ok çiz: videonun üzerinde sürükle">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13L12.5 3.5M7 3.5h5.5V9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -62,13 +65,6 @@
         <svg class="i-off" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 7.5h2.8L10 4.5v11l-3.7-3H3.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M13 8l4 4M17 8l-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       </button>
       </div>
-    </div>
-    <div class="fb-right">
-        <button id="btnSaveAs" class="btn" type="button" title="Yeni dosya olarak kaydet (Ctrl Shift S)" disabled>Farklı kaydet</button>
-        <button id="btnExport" class="btn primary" type="button" title="Aynı klasöre yeni dosya olarak kaydeder, orijinal değişmez (Ctrl S)" disabled><span id="btnExportLabel">Kaydet</span></button>
-        <button id="btnCopy" class="btn primary iconly" type="button" aria-label="Panoya kopyala" title="Panoya kopyala (Ctrl Shift C)" disabled>
-          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 3.5v-.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        </button>
 
     <span class="status" id="fHdr" hidden title="Hassas kaydetmede renkler normal görüntüye (SDR) çevrilir">HDR</span>
     <span class="status" id="fProxy" hidden title="Bu kodek doğrudan oynatılamadığı için hafif bir kopya gösteriliyor. Kaydetme orijinal dosyadan yapılır.">Önizleme kopyası</span>
@@ -157,6 +153,10 @@
 
     <div class="controls">
       <div class="ctl-left">
+        <button id="btnPlay" class="playbtn" type="button" aria-label="Oynat" title="Oynat (Boşluk)" disabled>
+        <svg class="i-play" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 3.8v12.4L16 10z" fill="currentColor"/></svg>
+        <svg class="i-pause" viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="4" width="3.4" height="12" rx="1" fill="currentColor"/><rect x="11.6" y="4" width="3.4" height="12" rx="1" fill="currentColor"/></svg>
+      </button>
         <div class="readout">
           <div class="clock"><span id="tNow">0:00.00</span><span class="of" id="tTotal">0:00.00</span></div>
           <span class="summary" aria-live="polite">
@@ -170,20 +170,16 @@
       <div class="ctl-mid">
         
         <input id="inTime" hidden class="time" type="text" inputmode="decimal" spellcheck="false" aria-label="Başlangıç zamanı" title="Başlangıç (I)" value="0:00.00" disabled>
-        <button id="btnToStart" class="iconbtn" type="button" aria-label="Başa sar" title="Başa sar (Home)" disabled>
+        <button id="btnToStart" hidden class="iconbtn" type="button" aria-label="Başa sar" title="Başa sar (Home)" disabled>
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 4.5v11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M15 5.2v9.6a.6.6 0 0 1-.9.5L7.6 10.5a.6.6 0 0 1 0-1L14.1 4.7a.6.6 0 0 1 .9.5z" fill="currentColor"/></svg>
         </button>
-        <button id="btnBack" class="iconbtn" type="button" aria-label="5 saniye geri" title="5 saniye geri" disabled>
+        <button id="btnBack" hidden class="iconbtn" type="button" aria-label="5 saniye geri" title="5 saniye geri" disabled>
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10a5.5 5.5 0 1 0 1.8-4.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M6.6 2.8L6.2 6.1l3.3.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><text x="10" y="12.6" text-anchor="middle" font-size="6.5" font-weight="700" fill="currentColor" font-family="Segoe UI, sans-serif">5</text></svg>
         </button>
-        <button id="btnPlay" class="playbtn" type="button" aria-label="Oynat" title="Oynat (Boşluk)" disabled>
-        <svg class="i-play" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 3.8v12.4L16 10z" fill="currentColor"/></svg>
-        <svg class="i-pause" viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="4" width="3.4" height="12" rx="1" fill="currentColor"/><rect x="11.6" y="4" width="3.4" height="12" rx="1" fill="currentColor"/></svg>
-      </button>
-        <button id="btnFwd" class="iconbtn" type="button" aria-label="5 saniye ileri" title="5 saniye ileri" disabled>
+        <button id="btnFwd" hidden class="iconbtn" type="button" aria-label="5 saniye ileri" title="5 saniye ileri" disabled>
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15.5 10a5.5 5.5 0 1 1-1.8-4.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13.4 2.8l.4 3.3-3.3.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><text x="10" y="12.6" text-anchor="middle" font-size="6.5" font-weight="700" fill="currentColor" font-family="Segoe UI, sans-serif">5</text></svg>
         </button>
-        <button id="btnToEnd" class="iconbtn" type="button" aria-label="Sona git" title="Sona git (End)" disabled>
+        <button id="btnToEnd" hidden class="iconbtn" type="button" aria-label="Sona git" title="Sona git (End)" disabled>
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15 4.5v11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M5 5.2v9.6a.6.6 0 0 0 .9.5l6.5-4.8a.6.6 0 0 0 0-1L5.9 4.7a.6.6 0 0 0-.9.5z" fill="currentColor"/></svg>
         </button>
         <input id="outTime" hidden class="time" type="text" inputmode="decimal" spellcheck="false" aria-label="Bitiş zamanı" title="Bitiş (O)" value="0:00.00" disabled>
@@ -194,6 +190,13 @@
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 7.5h2.8L10 4.5v11l-3.7-3H3.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M13 7.3a3.6 3.6 0 0 1 0 5.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           <input type="range" id="volume" min="0" max="100" value="100" aria-label="Önizleme ses düzeyi">
         </label>
+        <span class="vsep" aria-hidden="true"></span>
+        <button id="btnSaveAs" class="btn" type="button" title="Yeni dosya olarak kaydet (Ctrl Shift S)" disabled>Farklı kaydet</button>
+        <button id="btnExport" class="btn primary" type="button" title="Aynı klasöre yeni dosya olarak kaydeder, orijinal değişmez (Ctrl S)" disabled><span id="btnExportLabel">Kaydet</span></button>
+        <button id="btnCopy" class="btn primary iconly" type="button" aria-label="Panoya kopyala" title="Panoya kopyala (Ctrl Shift C)" disabled>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 3.5v-.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+
         
       </div>
     </div>
