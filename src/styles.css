@@ -1130,13 +1130,16 @@ body.dragging .drop-hint { display: flex; }
    zeminin üstünde hafif koyu bir katman, düğmeler Fluent'teki gibi yarı saydam. Menüler ve iletişim kutuları opak kalır.
    Sınıf yalnız Mica gerçekten açıldıysa eklenir (Windows 10'da ve ayar kapalıyken görünüm değişmez). */
 :root.mica {
-  --stage-glass: color-mix(in srgb, var(--stage) 55%, transparent);
+  --stage-glass: rgba(0, 0, 0, .045);
   --well: var(--stage-glass);
-  --btn-bg: rgba(255, 255, 255, .7); --btn-bg-hover: rgba(249, 249, 249, .5); --btn-bg-press: rgba(249, 249, 249, .3);
+  --btn-bg: rgba(255, 255, 255, .5); --btn-bg-hover: rgba(255, 255, 255, .65); --btn-bg-press: rgba(255, 255, 255, .35);
 }
 :root.mica[data-theme="dark"] {
-  --stage-glass: color-mix(in srgb, var(--stage) 70%, transparent);
-  --btn-bg: rgba(255, 255, 255, .06); --btn-bg-hover: rgba(255, 255, 255, .085); --btn-bg-press: rgba(255, 255, 255, .03);
+  --stage-glass: rgba(0, 0, 0, .22);
+  --btn-bg: rgba(255, 255, 255, .06); --btn-bg-hover: rgba(255, 255, 255, .09); --btn-bg-press: rgba(255, 255, 255, .03);
 }
 :root.mica body { background: transparent; }
 :root.mica .stage, :root.mica .strip, :root.mica .app[data-state="empty"] .strip { background: var(--stage-glass); }
+/* Kopyala ve Kaydet saydam olmaz: asıl işi yapan düğmeler zeminden ayrışsın */
+:root.mica .ctl-right #btnCopy, :root.mica .save-wrap .btn { --btn-bg: #ffffff; --btn-bg-hover: #f9f9f9; --btn-bg-press: #f3f3f3; --btn-hover: #f6f6f6; }
+:root.mica[data-theme="dark"] .ctl-right #btnCopy, :root.mica[data-theme="dark"] .save-wrap .btn { --btn-bg: #2d2d2d; --btn-bg-hover: #323232; --btn-bg-press: #282828; --btn-hover: #323232; }
