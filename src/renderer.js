@@ -365,12 +365,24 @@
   const applyVolume = () => {
     v.volume = volume.value / 100;
     volume.style.setProperty('--fill', `${volume.value}%`);
-    volume.closest('.volume').classList.toggle('silent', +volume.value === 0);
+    const wrap = volume.closest('.volume');
+    wrap.classList.toggle('silent', +volume.value === 0);
+    wrap.classList.toggle('low', +volume.value > 0 && +volume.value < 50);
+    $('btnVol').setAttribute('aria-label', +volume.value === 0 ? 'Önizleme sesini aç' : 'Önizleme sesini kapat');
   };
   applyVolume();
   volume.addEventListener('input', applyVolume);
   volume.addEventListener('change', () => { try { localStorage.setItem('kesit.volume', volume.value); } catch (_) { /* depolama yok */ } volume.blur(); });
   volume.addEventListener('keydown', (e) => e.stopPropagation());
+  // Hoparlör simgesi: önizleme sesini kapatır / eski düzeye döndürür
+  let lastVolume = +volume.value || 100;
+  $('btnVol').addEventListener('click', (e) => {
+    if (e.detail > 0) e.currentTarget.blur();
+    if (+volume.value > 0) { lastVolume = +volume.value; volume.value = 0; } else volume.value = lastVolume || 100;
+    applyVolume();
+    try { localStorage.setItem('kesit.volume', volume.value); } catch (_) { /* depolama yok */ }
+  });
+  volume.addEventListener('input', () => { if (+volume.value > 0) lastVolume = +volume.value; });
 
   // Videodaki konumu, kesilmiş sonuçtaki konuma çevirir (saatte gösterilir).
   function resultTime(t) {
@@ -554,6 +566,7 @@
     $('btnSaveVersion').disabled = $('btnOverwrite').disabled = dur < 0.05 || !edits;
     const est = estimateSize();
     const tooBig = est > CLIP_MAX;
+    $('sumBytes').textContent = est ? `≈ ${fmtBytes(est)}` : '';
     $('btnCopy').disabled = dur < 0.05 || tooBig;
     $('btnCopy').title = tooBig
       ? `Panoya kopyalamak için çok büyük (≈ ${fmtBytes(est)}). Kısalt ya da küçült`
@@ -833,7 +846,7 @@
     el.crop.classList.toggle('locked', !edit);
     const peek = !edit && !!state.cropPeek && !state.tool && !state.cropView;
     el.crop.classList.toggle('peek', peek);
-    el.crop.hidden = ghost && !edit && !peek;
+    el.crop.hidden = false; // tutamaçlar CSS geçişiyle belirip kaybolur
     el.crop.tabIndex = edit && !ghost ? 0 : -1;
     $('btnCropReset').hidden = ghost;
     const P = (n) => `${n * 100}%`;
@@ -1045,7 +1058,7 @@
   // Kesme açıkken film şeridi dışına tıklamak onu kapatır (cetvel ve oynatma düğmeleri hariç).
   document.addEventListener('pointerdown', (e) => {
     if (!state.cutEdit) return;
-    if (e.target.closest('.timeline, #btnCut, .ctl-mid, .appmenu-wrap, .modal, .toast')) return;
+    if (e.target.closest('.timeline, #btnCut, .appmenu-wrap, .modal, .toast')) return;
     if (e.target.closest('.viewport')) state.annoClickGuard = true;
     setCutEdit(false);
   }, true);
@@ -1898,7 +1911,7 @@
       ...document.querySelectorAll('.seg button')].forEach((n) => { n.disabled = true; });
     el.inTime.value = el.outTime.value = fmtTime(0);
     el.tNow.textContent = el.tTotal.textContent = fmtTime(0);
-    el.sumDur.textContent = '–'; el.sumSize.textContent = ''; el.sumFlags.textContent = '';
+    el.sumDur.textContent = '–'; el.sumSize.textContent = ''; el.sumFlags.textContent = ''; $('sumBytes').textContent = '';
     $('btnExportLabel').textContent = 'Kaydet';
     $('fHdr').hidden = true; el.fProxy.hidden = true;
     document.title = 'Kesit';

@@ -396,7 +396,7 @@ body.dragging .drop-hint { display: flex; }
 .crop.ghost { cursor: default; pointer-events: none; }
 .crop.locked, .crop.locked * { pointer-events: none !important; }
 .crop.locked { outline: 0; box-shadow: none; }
-.crop.locked .edge, .crop.locked .corner, .crop.locked .third, .crop.locked .crop-label { display: none; }
+.crop.locked .third, .crop.locked .crop-label { display: none; }
 .crop.ghost .third, .crop.ghost .crop-label { display: none; }
 .crop.ghost { outline: 1px solid rgba(255, 255, 255, .55); outline-offset: -1px; }
 .crop.ghost .corner { pointer-events: auto; }
@@ -508,7 +508,6 @@ body.dragging .drop-hint { display: flex; }
 .segs { position: absolute; inset: 0; pointer-events: none; }
 .segs .handle { pointer-events: auto; }
 .track { cursor: pointer; }
-.track:not(.cutting) .segs .handle { display: none; }
 .track.cutting { cursor: crosshair; }
 .track.cutting .strip { box-shadow: 0 0 0 2px var(--accent-soft); }
 .gap {
@@ -733,11 +732,9 @@ body.dragging .drop-hint { display: flex; }
 .viewport.crop-focus .crop { outline: 0; box-shadow: none; }
 
 /* Fare videonun üstündeyken kırpma tutamaçları görünür (kırpma açılmadan); tutulunca kırpma açılır */
-.crop.locked.peek .edge, .crop.locked.peek .corner { display: block; pointer-events: auto !important; }
-.crop.locked.peek .edge, .crop.locked.peek .corner { animation: tip-in .15s ease both; }
+.crop.locked.peek .edge, .crop.locked.peek .corner { pointer-events: auto !important; }
 .crop.locked.peek:not(.ghost) { outline: 1px solid rgba(255, 255, 255, .6); outline-offset: -1px; }
 /* Film şeridinin üstüne gelince parça uç tutamaçları hemen görünür (Kes kapalıyken de sürüklenebilir) */
-.track.peek .segs .handle { display: grid; animation: tip-in .15s ease both; }
 
 /* ---------- 20. tur: düğmeler (Windows 11 Fluent'e yakın: hafif kabarık, yumuşak köşe, net basılma) ---------- */
 :root {
@@ -844,3 +841,88 @@ body.dragging .drop-hint { display: flex; }
 .save-menu { top: auto; }
 .split:has(#btnExport:disabled) #btnSaveMenu:hover:not(:disabled) { background: var(--btn-bg-hover); }
 .split:has(#btnExport:disabled) #btnSaveMenu:disabled { color: var(--text-disabled); }
+
+/* ---------- 22. tur ---------- */
+/* Tutamaçlar animasyonla belirir ve kaybolur (görünmezken tıklanmaz) */
+.crop .edge, .crop .corner {
+  transition: opacity .18s ease, scale .18s ease, visibility 0s linear 0s;
+}
+.crop.locked:not(.peek) .edge, .crop.locked:not(.peek) .corner {
+  opacity: 0; scale: .7; visibility: hidden;
+  transition: opacity .18s ease, scale .18s ease, visibility 0s linear .18s;
+}
+.crop.ghost { transition: outline-color .18s ease; }
+.crop.ghost.locked:not(.peek) { outline-color: transparent; }
+.segs .handle { transition: opacity .16s ease, scale .16s ease, visibility 0s linear 0s; }
+.track:not(.cutting):not(.peek) .segs .handle {
+  opacity: 0; scale: 1 .5; visibility: hidden; pointer-events: none;
+  transition: opacity .16s ease, scale .16s ease, visibility 0s linear .16s;
+}
+
+/* Üst çubuk: solda menü + tam ekran, ortada video bilgileri, sağda araçlar */
+.framebar { display: grid; grid-template-columns: 1fr auto 1fr; }
+.framebar > .fb-right { justify-self: end; }
+.fb-left > .fb-center { margin-left: 0; }
+.fb-info {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.fb-info > span:empty { display: none; }
+.fb-info > span + span:not(:empty)::before { content: '·'; margin-right: 6px; color: var(--text-3); }
+.fb-info #sumSize { color: var(--text); font-weight: 600; }
+.fb-info .flags { color: var(--accent); }
+.app[data-state="empty"] .fb-info { visibility: hidden; }
+
+/* Alt çubuk: solda oynatma, ortada Kırp + Kes, sağda kaydetme */
+.ctl-mid { gap: var(--s2); }
+.ctl-mid .ratio-wrap .ratiomenu { top: auto; bottom: calc(100% + 6px); left: 0; }
+@keyframes menu-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* Oynat: yuvarlak, sakin; yanında konum ve ses tek grup */
+.ctl-left { gap: var(--s3); }
+.playbtn {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--btn-bg); color: var(--text);
+  border: 1px solid var(--btn-stroke); border-bottom-color: var(--btn-stroke-bottom);
+  box-shadow: var(--btn-shadow);
+}
+.playbtn:hover:not(:disabled) { background: var(--btn-bg-hover); }
+.playbtn:active:not(:disabled) { background: var(--btn-bg-press); transform: none; box-shadow: none; }
+.playbtn.playing { background: var(--accent); color: var(--accent-ink); border-color: var(--acc-stroke); border-bottom-color: var(--acc-stroke-bottom); }
+.playbtn.playing:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 90%, var(--bg)); }
+.playbtn:disabled { background: transparent; color: var(--text-disabled); border-color: var(--btn-stroke); box-shadow: none; }
+.playbtn svg { width: 16px; height: 16px; }
+.playbtn .i-play { margin-left: 2px; }
+.clock { min-width: 128px; align-items: baseline; }
+#tNow { font-size: 14px; font-weight: 600; }
+.clock .of { font-size: 12px; }
+
+.volume {
+  display: flex; align-items: center; gap: 4px; height: 32px; padding: 0;
+  border-radius: 0; background: none; color: var(--text-2); cursor: default;
+}
+.volume:hover, .volume:focus-within { background: none; padding-right: 0; }
+.volume #btnVol { width: 32px; height: 32px; color: var(--text-2); }
+.volume #btnVol:hover { color: var(--text); }
+.volume #btnVol svg { width: 18px; height: 18px; }
+.volume #btnVol .i-off, .volume.silent #btnVol .i-on { display: none; }
+.volume.silent #btnVol .i-off { display: block; }
+.volume.low #btnVol .w2 { display: none; }
+.volume input, .volume:hover input, .volume:focus-within input {
+  width: 88px; margin: 0; opacity: 1; height: 4px;
+  background: linear-gradient(var(--accent), var(--accent)) 0 / var(--fill) 100% no-repeat, color-mix(in srgb, var(--text) 22%, transparent);
+}
+.volume.silent input { background: color-mix(in srgb, var(--text) 22%, transparent); }
+.volume input::-webkit-slider-thumb {
+  width: 16px; height: 16px; background: var(--accent);
+  border: 3px solid var(--btn-bg); box-shadow: 0 0 0 1px var(--btn-stroke-bottom);
+  transition: scale 80ms ease;
+}
+:root[data-theme="dark"] .volume input::-webkit-slider-thumb { border-color: #454545; }
+.volume input:hover::-webkit-slider-thumb { scale: 1.12; }
+.volume input:active::-webkit-slider-thumb { scale: .9; }
+@media (max-width: 900px) {
+  .volume input { display: none; }
+  .clock { min-width: 0; }
+  .clock .of { display: none; }
+}
