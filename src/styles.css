@@ -441,11 +441,11 @@ body.dragging .drop-hint { display: flex; }
 .adel:hover { background: #c42b1c; color: #fff; }
 
 /* ---------- Alt şerit: zaman çizelgesi + kontroller ---------- */
-/* Alt şerit: Windows uygulamalarındaki gibi pencere boyu, ince üst çizgi; içerik videonun kenarlarıyla hizalı */
+/* Alt şerit: üst çubukla aynı zemin, ayraç yok */
 .transport {
-  margin-top: var(--s3);
+  margin-top: var(--s1);
   padding: 18px 24px var(--s3);
-  background: var(--surface); border-top: 1px solid var(--border);
+  background: transparent;
 }
 .timeline { padding: 0; }
 
@@ -722,17 +722,12 @@ body.dragging .drop-hint { display: flex; }
   .vsep, .msep { background: CanvasText; }
 }
 
-/* 11. tur: süre ve boyut üstte ortada (pencere başlığı gibi), kırp ve kes altta ortada */
-.fb-title {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  flex-direction: row; align-items: baseline; gap: var(--s3); pointer-events: none;
-}
-.fb-title #tNow { font-size: 14px; }
-.fb-title .summary::before { content: '·'; margin-right: var(--s3); color: var(--text-3); }
-.fb-title .summary:empty::before, .fb-title .summary:not(:has(#sumSize:not(:empty)))::before { content: none; }
-.app[data-state="empty"] .fb-title { visibility: hidden; }
-.ctl-mid .fb-center { display: flex; align-items: center; gap: var(--s1); }
-.ctl-mid .ratiomenu { top: auto; bottom: calc(100% + 6px); }
-.fb-title .summary { gap: 0; }
-.fb-title .summary > :not(:empty) + :not(:empty) { margin-left: var(--s2); }
-.fb-title #sumSize { margin-left: 0; }
+/* 12. tur: süre ve boyut sol üstte iki satır, ses yanında; kırp ve kes altta oynatın yanında */
+.top-info { margin: 0 var(--s2) 0 var(--s2); line-height: 1; }
+.top-info #tNow { font-size: 14px; line-height: 18px; }
+.top-info .summary { gap: 0; line-height: 15px; font-size: 11.5px; }
+.top-info .summary > :not(:empty) + :not(:empty) { margin-left: var(--s2); }
+.top-info #sumSize { margin-left: 0; }
+.app[data-state="empty"] .top-info, .app[data-state="empty"] .fb-left .volume-wrap { visibility: hidden; }
+.ctl-left .fb-center { display: flex; align-items: center; gap: var(--s1); margin-left: var(--s2); }
+.ctl-left .ratiomenu { top: auto; bottom: calc(100% + 6px); }
