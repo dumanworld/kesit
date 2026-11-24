@@ -845,17 +845,18 @@ body.dragging .drop-hint { display: flex; }
 /* ---------- 22. tur ---------- */
 /* Tutamaçlar animasyonla belirir ve kaybolur (görünmezken tıklanmaz) */
 .crop .edge, .crop .corner {
-  transition: opacity .18s ease, scale .18s ease, visibility 0s linear 0s;
+  transition: opacity .18s ease, visibility 0s linear 0s;
 }
 .crop.locked:not(.peek) .edge, .crop.locked:not(.peek) .corner {
-  opacity: 0; scale: .7; visibility: hidden;
-  transition: opacity .18s ease, scale .18s ease, visibility 0s linear .18s;
+  opacity: 0; visibility: hidden;
+  transition: opacity .18s ease, visibility 0s linear .18s;
 }
 .crop.ghost { transition: outline-color .18s ease; }
 .crop.ghost.locked:not(.peek) { outline-color: transparent; }
-.segs .handle { transition: opacity .16s ease, scale .16s ease, visibility 0s linear 0s; }
+/* Kesme tutamaçları parçanın kenarından dışarı doğru açılır */
+.segs .handle { transform-origin: 0 50%; transition: opacity .16s ease, scale .16s ease, visibility 0s linear 0s; }
 .track:not(.cutting):not(.peek) .segs .handle {
-  opacity: 0; scale: 1 .5; visibility: hidden; pointer-events: none;
+  opacity: 0; scale: 0 1; visibility: hidden; pointer-events: none;
   transition: opacity .16s ease, scale .16s ease, visibility 0s linear .16s;
 }
 
@@ -869,7 +870,7 @@ body.dragging .drop-hint { display: flex; }
 }
 .fb-info > span:empty { display: none; }
 .fb-info > span + span:not(:empty)::before { content: '·'; margin-right: 6px; color: var(--text-3); }
-.fb-info #sumSize { color: var(--text); font-weight: 600; }
+.fb-info #sumSize { color: var(--text-2); }
 .fb-info .flags { color: var(--accent); }
 .app[data-state="empty"] .fb-info { visibility: hidden; }
 
@@ -893,9 +894,10 @@ body.dragging .drop-hint { display: flex; }
 .playbtn:disabled { background: transparent; color: var(--text-disabled); border-color: var(--btn-stroke); box-shadow: none; }
 .playbtn svg { width: 16px; height: 16px; }
 .playbtn .i-play { margin-left: 2px; }
-.clock { min-width: 128px; align-items: baseline; }
-#tNow { font-size: 14px; font-weight: 600; }
-.clock .of { font-size: 12px; }
+.fb-info .clock { gap: 4px; }
+.fb-info .clock .of { font-size: 12px; }
+.fb-info .clock .of::before { content: '/ '; }
+#tNow { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--text); }
 
 .volume {
   display: flex; align-items: center; gap: 4px; height: 32px; padding: 0;
@@ -923,6 +925,4 @@ body.dragging .drop-hint { display: flex; }
 .volume input:active::-webkit-slider-thumb { scale: .9; }
 @media (max-width: 900px) {
   .volume input { display: none; }
-  .clock { min-width: 0; }
-  .clock .of { display: none; }
 }
