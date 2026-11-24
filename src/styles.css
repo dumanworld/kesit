@@ -197,7 +197,9 @@ input:disabled { opacity: .45; }
   box-shadow: var(--shadow-flyout);
 }
 .ratiomenu .ratio { width: 100%; height: 32px; padding: 0 var(--s2); gap: var(--s3); font-size: 13px; color: var(--text); border: 0; }
-.ratiomenu .ratio .shape { flex: none; }
+.ratiomenu .ratio { display: grid; grid-template-columns: 18px 1fr; justify-items: start; }
+.ratiomenu .ratio .shape { justify-self: center; }
+.ratiomenu .msep:has(+ [hidden]) { display: none; }
 .ratiomenu .ratio[aria-checked="true"] { background: var(--accent-soft); color: var(--accent); box-shadow: none; font-weight: 600; }
 .ratiomenu .ratio:focus-visible, .ratiomenu .mitem:focus-visible { outline: none; background: var(--hover); box-shadow: inset 0 0 0 1px var(--border-strong); }
 .ratiomenu .mitem { color: var(--text-2); }
