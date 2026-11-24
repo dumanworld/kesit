@@ -560,7 +560,8 @@
     el.sumSize.textContent = `${vf.outW}×${vf.outH}`;
     const edits = hasEdits();
     el.btnExport.disabled = dur < 0.05 || !edits;
-    $('btnExportLabel').textContent = edits ? 'Kaydet' : 'Değişiklik yok';
+    $('btnExportLabel').textContent = 'Kaydet';
+    $('sumState').textContent = edits ? '' : 'Değişiklik yok';
     el.btnSaveAs.disabled = dur < 0.05;
     $('btnSaveMenu').disabled = dur < 0.05;
     $('btnSaveVersion').disabled = $('btnOverwrite').disabled = dur < 0.05 || !edits;
@@ -574,7 +575,7 @@
     // Açık seçenekler kaydetmeden önce görünür kalsın (menü kapalıyken bile)
     const flags = [];
     if (q === 'fast') flags.push('Hızlı');
-    if (state.mute && state.info.hasAudio) flags.push('Sessiz');
+    // Sessiz: sol üstteki Sesli/Sessiz anahtarında görünüyor
     if (state.resize && vf.outW === 1080) flags.push('1080 px');
     el.sumFlags.textContent = flags.map((f, i) => (i ? f.toLocaleLowerCase('tr') : f)).join(', ');
     scheduleCommit(); // her düzenleme sonunda geçmişe yazılır (sürüklerken değil)
@@ -596,7 +597,8 @@
     const muted = state.mute && state.info && state.info.hasAudio;
     $('btnMute').classList.toggle('muted', !!muted);
     $('btnMute').setAttribute('aria-pressed', String(!!muted));
-    $('btnMute').setAttribute('aria-label', muted ? 'Ses kapalı' : 'Ses açık');
+    $('btnMute').setAttribute('aria-label', muted ? 'Kaydederken ses kaldırılacak' : 'Ses kaydedilecek');
+    $('muteLabel').textContent = state.info && !state.info.hasAudio ? 'Ses yok' : muted ? 'Sessiz' : 'Sesli';
     $('btnMute').title = !state.info || state.info.hasAudio
       ? (muted ? 'Ses kaldırılacak: tıkla, ses kalsın' : 'Ses açık: tıkla, kaydederken ses kaldırılsın')
       : 'Bu videoda ses yok';
@@ -1911,7 +1913,7 @@
       ...document.querySelectorAll('.seg button')].forEach((n) => { n.disabled = true; });
     el.inTime.value = el.outTime.value = fmtTime(0);
     el.tNow.textContent = el.tTotal.textContent = fmtTime(0);
-    el.sumDur.textContent = '–'; el.sumSize.textContent = ''; el.sumFlags.textContent = ''; $('sumBytes').textContent = '';
+    el.sumDur.textContent = '–'; el.sumSize.textContent = ''; el.sumFlags.textContent = ''; $('sumBytes').textContent = ''; $('sumState').textContent = '';
     $('btnExportLabel').textContent = 'Kaydet';
     $('fHdr').hidden = true; el.fProxy.hidden = true;
     document.title = 'Kesit';

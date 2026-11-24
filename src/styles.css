@@ -964,3 +964,42 @@ body.dragging .drop-hint { display: flex; }
 :root[data-theme="dark"] .edit-dock .ratio-wrap:has(#btnRatio:not([hidden])) .tbtn { background: rgba(255, 255, 255, .1); }
 .edit-dock .tbtn.cropped:not(.active) { color: var(--accent); }
 .edit-dock .ratio-wrap .ratiomenu { left: -3px; bottom: calc(100% + 9px); }
+
+/* ---------- 25. tur: tasarım incelemesi düzeltmeleri ---------- */
+/* Dışa aktarma sesi: önizleme sesiyle karışmasın diye yazılı anahtar */
+#btnMute {
+  width: auto; height: 28px; padding: 0 10px 0 7px; gap: 5px;
+  display: inline-flex; align-items: center;
+  border-radius: 14px; border: 1px solid var(--btn-stroke); border-bottom-color: var(--btn-stroke-bottom);
+  background: var(--btn-bg); color: var(--text); font-size: 12px; font-weight: 500;
+}
+#btnMute:hover:not(:disabled) { background: var(--btn-bg-hover); }
+#btnMute svg { width: 15px; height: 15px; }
+#btnMute.muted { color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--btn-bg)); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
+#btnMute:disabled { color: var(--text-disabled); background: transparent; }
+/* Menü ile görünüm/kaydetme ayarları arasında ince ayırıcı */
+.fb-left > .fb-center { gap: 6px; margin-left: 6px; padding-left: 10px; position: relative; }
+.fb-left > .fb-center::before { content: ''; position: absolute; left: 0; top: 50%; height: 18px; translate: 0 -50%; width: 1px; background: var(--border); }
+/* Mavi yalnız Kaydet'te ve açık araçta: oynat, ses çubuğu ve uyarılar nötr */
+.playbtn.playing, .playbtn.playing:hover:not(:disabled) {
+  background: var(--btn-bg); color: var(--text);
+  border-color: var(--btn-stroke); border-bottom-color: var(--btn-stroke-bottom);
+}
+.playbtn.playing:hover:not(:disabled) { background: var(--btn-bg-hover); }
+.fb-info .flags { color: var(--text-2); }
+.volume input, .volume:hover input, .volume:focus-within input {
+  background: linear-gradient(var(--text-2), var(--text-2)) 0 / var(--fill) 100% no-repeat, color-mix(in srgb, var(--text) 18%, transparent);
+}
+.volume input::-webkit-slider-thumb { background: var(--text); }
+/* "Değişiklik yok" bilgi satırında, okunur grilikte; pasif Kaydet yine "Kaydet" der */
+.fb-info #sumState { color: var(--text-2); }
+/* Önizleme sesi: kaydırıcı yalnız hoparlörün üstüne gelince açılır (önceki gibi) */
+.volume input, .volume:hover input, .volume:focus-within input { transition: width .18s ease, margin .18s ease, opacity .18s ease; }
+.volume input { width: 0; opacity: 0; margin-left: 0; }
+.volume:hover input, .volume:focus-within input { width: 88px; opacity: 1; margin-left: 6px; }
+.volume { padding-right: 0; border-radius: 16px; transition: background-color var(--t), padding var(--t); }
+.volume:hover, .volume:focus-within { background: var(--hover); padding-right: 12px; }
+.volume #btnVol:hover { background: transparent; }
+@media (max-width: 900px) { .volume input { display: block; } }
+.fb-info .info-sub > span + span:not(:empty)::before { content: none; }
+.fb-info .info-sub > span:not(:empty) ~ span:not(:empty)::before { content: '·'; margin-right: 6px; color: var(--text-3); }
