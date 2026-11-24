@@ -458,7 +458,7 @@ body.dragging .drop-hint { display: flex; }
 
 .timeline { position: relative; }
 .ruler {
-  position: relative; height: 30px; margin-bottom: 10px;
+  position: relative; height: 30px; margin-bottom: 0;
   border-radius: 8px; background: transparent; cursor: pointer; touch-action: none;
   transition: background-color var(--t);
 }
@@ -523,7 +523,7 @@ body.dragging .drop-hint { display: flex; }
 .pending.add { border: 2px dashed var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
 
 .playhead {
-  position: absolute; top: -40px; bottom: -2px; width: 2px; margin-left: -1px;
+  position: absolute; top: -30px; bottom: -2px; width: 2px; margin-left: -1px;
   background: var(--text); pointer-events: none; z-index: 3;
 }
 /* Kurgu programlarındaki gibi üstte küçük kalkan biçimli baş */
@@ -722,28 +722,52 @@ body.dragging .drop-hint { display: flex; }
   .vsep, .msep { background: CanvasText; }
 }
 
-/* 13. tur: menünün yanında Kırp ve Kes düğmeleri */
-.fb-left > .fb-center { margin-left: var(--s3); gap: var(--s2); }
-.fb-left .dropbtn:not(.chevbtn) {
+/* 15. tur: Kırp ve Kes yerinde beliren düğmeler.
+   Videonun ya da film şeridinin üstünde fare 2 sn kıpırdamadan durunca açılır; kırpma/kesme açıkken kalır. */
+.hover-bar {
+  display: flex; align-items: center; gap: var(--s2);
+  opacity: 0; pointer-events: none; transform: translateY(4px);
+  transition: opacity .2s ease, transform .2s ease;
+}
+.hover-bar.shown, .hover-bar.pinned, .hover-bar:focus-within { opacity: 1; pointer-events: auto; transform: none; }
+.fb-center.hover-bar[inert] { opacity: 0; }
+.crop-bar {
+  position: absolute; top: var(--s3); left: 50%; translate: -50% 0; z-index: 6;
+  padding: 4px; border-radius: var(--r-flyout);
+  background: var(--raised); border: 1px solid var(--border); box-shadow: var(--shadow-flyout);
+  transform: translateY(-4px);
+}
+.hover-bar .dropbtn:not(.chevbtn) {
   border: 1px solid var(--border); border-bottom-color: var(--border-strong); background: var(--surface);
 }
-.fb-left .dropbtn:hover, .fb-left .dropbtn[aria-expanded="true"] { background: var(--btn-hover); }
-.fb-left .dropbtn.active:not(.chevbtn) { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.crop-bar .dropbtn:not(.chevbtn) { border-color: transparent; background: transparent; }
+.hover-bar .dropbtn:hover { background: var(--btn-hover); }
+.hover-bar .dropbtn.active:not(.chevbtn) { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
 
-/* Saniye balonları hemen çıkmaz: fare ya da sürükleme bir an durunca belirir */
-.timeline:hover .ph-time, .timeline.scrubbing .ph-time, .playhead:focus-visible .ph-time { transition: opacity .15s ease .6s; }
-.timeline:hover .playhead::before, .timeline.scrubbing .playhead::before { transition: opacity .15s ease .6s; }
-@keyframes tip-in { from { opacity: 0; } to { opacity: 1; } }
-.edge-tip:not([hidden]), .ruler .ruler-hover:not([hidden]) span { animation: tip-in .15s ease .6s both; }
-
-/* Kırpma açıkken oranlar Kırp'ın yanında tek satır */
-.fb-left .ratio-wrap { gap: var(--s2); }
-.fb-left .ratiomenu {
+/* Kırp'a basınca oranlar yana doğru kayarak, sırayla açılır */
+.crop-bar .ratio-wrap { gap: 2px; }
+.crop-bar .ratiomenu {
   position: static; display: flex; flex-direction: row; align-items: center; gap: 2px; width: auto;
   padding: 0; background: none; border: 0; box-shadow: none;
 }
-.fb-left .ratiomenu[hidden] { display: none; }
-.fb-left .ratiomenu .ratio { width: auto; height: 28px; padding: 0 8px; gap: 6px; grid-template-columns: auto auto; white-space: nowrap; border-radius: var(--r); }
-.fb-left .ratiomenu .ratio:hover { background: var(--hover); }
-.fb-left .ratiomenu .msep { width: 1px; height: 16px; margin: 0 4px; background: var(--border); }
-.fb-left .ratiomenu .mitem { width: auto; height: 28px; padding: 0 8px; white-space: nowrap; }
+.crop-bar .ratiomenu[hidden] { display: none; }
+.crop-bar .ratiomenu .ratio { width: auto; height: 28px; padding: 0 8px; gap: 6px; grid-template-columns: auto auto; white-space: nowrap; border-radius: var(--r); }
+.crop-bar .ratiomenu .ratio:hover { background: var(--hover); }
+.crop-bar .ratiomenu .msep { width: 1px; height: 16px; margin: 0 4px; background: var(--border); }
+.crop-bar .ratiomenu .mitem { width: auto; height: 28px; padding: 0 8px; white-space: nowrap; }
+@keyframes ratio-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+.crop-bar .ratiomenu:not([hidden]) > * { animation: ratio-in .22s cubic-bezier(.2, .8, .2, 1) both; }
+.crop-bar .ratiomenu > :nth-child(2) { animation-delay: 25ms; }
+.crop-bar .ratiomenu > :nth-child(3) { animation-delay: 50ms; }
+.crop-bar .ratiomenu > :nth-child(4) { animation-delay: 75ms; }
+.crop-bar .ratiomenu > :nth-child(5) { animation-delay: 100ms; }
+.crop-bar .ratiomenu > :nth-child(6) { animation-delay: 125ms; }
+.crop-bar .ratiomenu > :nth-child(n+7) { animation-delay: 150ms; }
+@media (prefers-reduced-motion: reduce) { .hover-bar, .crop-bar .ratiomenu > * { transition: none; animation: none; } }
+
+/* Menü artık sağ üstte: panel ve alt menüler sola açılır */
+.fb-right .appmenu { left: auto; right: 0; }
+.fb-right .appmenu .am-sub { left: auto; right: calc(100% + 2px); }
+.fb-right .appmenu .am-parent { flex-direction: row-reverse; justify-content: flex-end; }
+.fb-right .appmenu .am-parent svg { transform: scaleX(-1); }
+.timeline.scrubbing .ruler-hover { display: none; }

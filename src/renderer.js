@@ -560,6 +560,8 @@
     $('btnCrop').classList.toggle('cropped', cropped && !state.cropEdit);
     $('btnRatio').classList.toggle('active', state.cropEdit);
     $('ratioMenu').hidden = !(state.cropEdit && state.info); // oranlar yalnız kırparken Kırp'ın yanında görünür
+    $('cropBar').classList.toggle('pinned', !!state.cropEdit);
+    $('cutBar').classList.toggle('pinned', !!state.cutEdit);
     $('btnCrop').setAttribute('aria-pressed', String(state.cropEdit));
     $('btnCrop').title = state.cropEdit ? 'Kırpmayı bitir' : 'Kırp: kırpma çerçevesini düzenle';
     $('btnCut').classList.toggle('active', state.cutEdit);
@@ -632,7 +634,10 @@
     if (state.drag && state.drag.kind === 'seek') applyDrag(e.clientX);
     if (!state.info) return;
     const t = xToTime(e.clientX);
-    rulerHover.hidden = false;
+    // Sürüklerken ya da oynatma başının hemen yanındayken tek balon yeter: imleç etiketi gizlenir
+    const near = Math.abs(e.clientX - el.playhead.getBoundingClientRect().left) < 44;
+    rulerHover.hidden = !!state.drag || near;
+    if (rulerHover.hidden) return;
     rulerHover.style.left = pct(t);
     rulerHover.firstChild.textContent = fmtTime(t);
   });
@@ -953,6 +958,22 @@
   document.querySelectorAll('.ratio').forEach((b) => b.addEventListener('click', () => { setRatio(b.dataset.ratio, false); setCropEdit(b.dataset.ratio !== 'orig'); closeRatioMenu(b.matches(':focus-visible')); }));
 
   // Kırp düğmesi kırpmayı açıp kapatır; yanındaki ok oranları açar.
+  // Kırp ve Kes yerinde belirir: fare videonun / film şeridinin üstünde 2 sn kıpırdamadan durunca.
+  // Fare o bölgeden (sahne / alt şerit) çıkınca, mod açık değilse kaybolur.
+  function dwellReveal(area, zone, bar) {
+    let timer = 0, lastX = -1, lastY = -1;
+    area.addEventListener('pointermove', (e) => {
+      if (!state.info || e.buttons) { clearTimeout(timer); return; }
+      if (Math.abs(e.clientX - lastX) < 3 && Math.abs(e.clientY - lastY) < 3) return; // titremeyi hareket sayma
+      lastX = e.clientX; lastY = e.clientY;
+      clearTimeout(timer);
+      if (!bar.classList.contains('shown')) timer = setTimeout(() => bar.classList.add('shown'), 2000);
+    });
+    area.addEventListener('pointerleave', () => clearTimeout(timer));
+    zone.addEventListener('pointerleave', () => { clearTimeout(timer); bar.classList.remove('shown'); });
+  }
+  dwellReveal($('viewport'), $('stage'), $('cropBar'));
+  dwellReveal(el.track, document.querySelector('.transport'), $('cutBar'));
   function setCropEdit(on) {
     on = !!on && !!state.info;
     if (state.cropEdit === on) return;
