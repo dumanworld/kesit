@@ -583,7 +583,7 @@
   function renderOptions() {
     document.querySelectorAll('.ratio').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.ratio === state.ratioKey)));
     const cropped = !!state.crop;
-    $('ratioLabel').textContent = cropped ? ({ free: 'Kırpıldı' }[state.ratioKey] || state.ratioKey) : 'Kırp';
+    $('ratioLabel').textContent = cropped && !['free', 'orig'].includes(state.ratioKey) ? state.ratioKey : 'Kırp';
     $('btnCrop').classList.toggle('active', state.cropEdit);
     $('btnCrop').classList.toggle('cropped', cropped && !state.cropEdit);
     $('btnRatio').classList.toggle('active', state.cropEdit);
@@ -846,7 +846,7 @@
     const edit = state.cropEdit;
     el.crop.classList.toggle('ghost', ghost);
     el.crop.classList.toggle('locked', !edit);
-    const peek = !edit && !!state.cropPeek && !state.tool && !state.cropView;
+    const peek = !edit && !!state.cropPeek && !state.tool; // "yalnız kırpılan alan" açıkken de görünür
     el.crop.classList.toggle('peek', peek);
     el.crop.hidden = false; // tutamaçlar CSS geçişiyle belirip kaybolur
     el.crop.tabIndex = edit && !ghost ? 0 : -1;
@@ -870,7 +870,8 @@
     const handle = e.target.dataset.corner || e.target.dataset.edge || null;
     if (!state.crop && !handle) return; // kadraj yokken yalnızca tutamaçlar çalışır
     // Üstüne gelince görünen tutamaçlardan biri tutulunca kırpma açılır
-    if (handle && !state.cropEdit) setCropEdit(true);
+    const viaPeek = !!handle && !state.cropEdit;
+    if (viaPeek) setCropEdit(true);
     // Çizim aracı seçiliyken ya da bir çizimin üstündeyken kadrajın içi çizime bırakılır
     if (!handle && (state.tool || hitTest(toVideo(e)))) return;
     e.stopPropagation();
@@ -878,7 +879,7 @@
     state.cropDrag = {
       handle,
       sx: e.clientX, sy: e.clientY, o: { ...(state.crop || FULL) },
-      left: r.left, top: r.top, rw: r.width, rh: r.height, moved: false
+      left: r.left, top: r.top, rw: r.width, rh: r.height, moved: false, viaPeek
     };
     el.crop.setPointerCapture(e.pointerId);
   });
@@ -949,7 +950,10 @@
   const endCrop = (e) => {
     if (!state.cropDrag) return;
     state.cropMoved = state.cropDrag.moved;
+    const viaPeek = state.cropDrag.viaPeek;
     state.cropDrag = null;
+    // Kırp düğmesine basmadan tutamaçtan kırpıldıysa bırakınca kırpma modunda kalmaz
+    if (viaPeek) setCropEdit(false);
     scheduleCommit();
     if (document.activeElement === el.crop) el.crop.blur();
     try { el.crop.releasePointerCapture(e.pointerId); } catch (_) {}
