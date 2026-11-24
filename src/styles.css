@@ -461,7 +461,6 @@ body.dragging .drop-hint { display: flex; }
   border-radius: 8px; background: var(--hover); cursor: pointer; touch-action: none;
   transition: background-color var(--t);
 }
-.ruler:hover { background: var(--pressed); }
 .ruler .ruler-hover {
   position: absolute; top: 0; bottom: 0; height: auto; width: 1px; padding: 0; border: 0;
   background: var(--text-3); pointer-events: none; z-index: 4;
@@ -526,6 +525,13 @@ body.dragging .drop-hint { display: flex; }
   position: absolute; top: -40px; bottom: -2px; width: 2px; margin-left: -1px;
   background: var(--text); pointer-events: none; z-index: 3;
 }
+/* Kurgu programlarındaki gibi üstte küçük kalkan biçimli baş */
+.playhead::before {
+  content: ''; position: absolute; top: 0; left: -5px;
+  width: 12px; height: 14px; background: var(--text);
+  clip-path: polygon(0 0, 100% 0, 100% 60%, 50% 100%, 0 60%);
+  border-radius: 2px;
+}
 /* Oynatma başının üstünde anlık saniye */
 .ph-time {
   opacity: 0; transition: opacity var(--t);
@@ -535,6 +541,8 @@ body.dragging .drop-hint { display: flex; }
 }
 /* Saniye balonu yalnız çizelgenin üstüne gelince ya da sürüklerken */
 .timeline:hover .ph-time, .timeline.scrubbing .ph-time, .playhead:focus-visible .ph-time { opacity: 1; }
+.timeline:hover .playhead::before, .timeline.scrubbing .playhead::before { opacity: 0; }
+.playhead::before { transition: opacity var(--t); }
 /* Tutamaç sürüklenirken yanında başı / sonu */
 .edge-tip {
   position: absolute; top: 50%; transform: translate(-100%, -50%); margin-left: -16px; z-index: 5;
@@ -596,6 +604,17 @@ body.dragging .drop-hint { display: flex; }
 
 #btnExport { margin-left: 0; }
 .btn.iconly { min-width: 0; width: var(--h-button); padding: 0; }
+/* Kaydet + kopyala tek parça: ortak köşeler, arada ince çizgi */
+.split { display: flex; }
+.split .btn { border-radius: 0; }
+.split .btn:first-child { border-radius: var(--r) 0 0 var(--r); }
+.split .btn:last-child { border-radius: 0 var(--r) var(--r) 0; }
+.split .btn + .btn { margin-left: 0; border-left: 1px solid color-mix(in srgb, var(--accent-ink) 35%, transparent); width: 36px; }
+/* Değişiklik yokken grup bütünüyle sade görünür: kaydet soluk, kopyala ikincil düğme gibi */
+.split:has(#btnExport:disabled) .btn { background: var(--surface); border: 1px solid var(--border); border-bottom-color: var(--border-strong); color: var(--text); }
+.split:has(#btnExport:disabled) #btnExport { color: var(--text-disabled); border-right: 0; }
+.split:has(#btnExport:disabled) #btnCopy:hover:not(:disabled) { background: var(--btn-hover); }
+.split:has(#btnExport:disabled) #btnCopy:disabled { color: var(--text-disabled); }
 .btn.iconly svg { width: 16px; height: 16px; }
 .ctl-right { gap: var(--s2); }
 /* Ses: oynat düğmesinin yanında hoparlör simgesi; üstüne gelince kaydırıcı açılır */
