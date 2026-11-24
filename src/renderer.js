@@ -169,6 +169,7 @@
     cancelPreview();
     state.file = r.file;
     state.info = r.info;
+    state.fileSize = r.size || 0;
     state.duration = r.info.duration;
     const m = r.file.match(/(\.[^./\\]+)$/);
     state.srcExt = m ? m[1].toLowerCase() : '.mp4';
@@ -434,6 +435,12 @@
     el.btnExport.disabled = dur < 0.05 || !edits;
     $('btnExportLabel').textContent = edits ? 'Kaydet' : 'Değişiklik yok';
     el.btnSaveAs.disabled = dur < 0.05;
+    const est = estimateSize();
+    const tooBig = est > CLIP_MAX;
+    $('btnCopy').disabled = dur < 0.05 || tooBig;
+    $('btnCopy').title = tooBig
+      ? `Panoya kopyalamak için çok büyük (≈ ${fmtBytes(est)}). Kısalt ya da küçült`
+      : `Panoya kopyala, ≈ ${fmtBytes(est)} (Ctrl Shift C)`;
     // Açık seçenekler kaydetmeden önce görünür kalsın (menü kapalıyken bile)
     const flags = [];
     if (q === 'fast') flags.push('Hızlı');
@@ -1153,6 +1160,38 @@
     renderHistoryButtons();
   }
 
+  // ---------- Panoya kopyalama için boyut tahmini ----------
+  // Kaynağın bit hızı üzerinden kaba bir tahmin: süre ve (kırpma/küçültmede) piksel oranıyla ölçeklenir.
+  const CLIP_MAX = 500 * 1024 * 1024;
+  function estimateSize() {
+    if (!state.info || !state.fileSize || !state.duration) return 0;
+    let est = state.fileSize * (outputDuration() / state.duration);
+    if (effectiveQuality() === 'precise' && (state.crop || state.resize)) {
+      const vf = G.videoFilter({ info: state.info, crop: state.crop, resize: state.resize });
+      est *= Math.min(1, (vf.outW * vf.outH) / (state.info.width * state.info.height || 1));
+    }
+    return est;
+  }
+  function fmtBytes(n) {
+    if (n < 1024 * 1024) return `${Math.max(1, Math.round(n / 1024))} KB`;
+    const mb = n / 1024 / 1024;
+    return mb < 1000 ? `${mb.toLocaleString('tr', { maximumFractionDigits: mb < 10 ? 1 : 0 })} MB` : `${(mb / 1024).toLocaleString('tr', { maximumFractionDigits: 1 })} GB`;
+  }
+  // Videoyu panoya dosya olarak koyar; değişiklik yoksa orijinali, varsa geçici bir çıktıyı.
+  async function copyToClipboard() {
+    if (!state.info || state.exporting) return;
+    if (estimateSize() > CLIP_MAX) { toast(`Panoya kopyalamak için çok büyük (≈ ${fmtBytes(estimateSize())}). Kısalt ya da küçült`, 'error'); return; }
+    if (!hasEdits()) return finishCopy(state.file);
+    return doExport('clipboard');
+  }
+  async function finishCopy(path) {
+    const c = await api.copyFileToClipboard(path);
+    if (!c.ok) { toast(`Panoya kopyalanamadı. ${c.error}`, 'error'); return false; }
+    const size = await api.fileSize(path).catch(() => 0);
+    toast(`Panoya kopyalandı${size ? ` (${fmtBytes(size)})` : ''}. Ctrl+V ile yapıştırabilirsin`);
+    return true;
+  }
+
   // ---------- Dışa aktarma ----------
   // Kaydetme penceresi açıkken arkadaki her şey odak ve ekran okuyucu dışında kalır.
   const BACKGROUND = () => [document.querySelector('.stage'), document.querySelector('.transport')];
@@ -1168,6 +1207,8 @@
 
   // overwrite=true: orijinalin üzerine yazar (Kaydet). false: yeni dosya (Farklı kaydet).
   async function doExport(overwrite) {
+    const toClipboard = overwrite === 'clipboard';
+    if (toClipboard) overwrite = false;
     if (!state.info || state.exporting) return;
     if (overwrite && !hasEdits()) { toast('Kaydedilecek değişiklik yok'); return; }
     if (outputDuration() < 0.05) { toast('Çıktıda kalacak bir bölüm yok, başlangıç ve bitişi kontrol et', 'error'); return; }
@@ -1176,7 +1217,9 @@
     let output = null;
     if (!overwrite) {
       const ext = quality === 'fast' ? state.srcExt : '.mp4';
-      output = await api.saveDialog({ input: state.file, suffix: '_kesit', ext, kind: 'video' });
+      output = toClipboard
+        ? await api.clipboardTarget({ input: state.file, ext })
+        : await api.saveDialog({ input: state.file, suffix: '_kesit', ext, kind: 'video' });
       if (!output) return;
     }
     const file = state.file;
@@ -1192,7 +1235,7 @@
     el.exBar.style.transform = 'scaleX(0)';
     el.exPct.textContent = '%0';
     el.exLabel.textContent = 'Hazırlanıyor';
-    $('exTitle').textContent = 'Kaydediliyor';
+    $('exTitle').textContent = toClipboard ? 'Panoya hazırlanıyor' : 'Kaydediliyor';
     el.btnCancel.hidden = false;
     focusBeforeSave = document.activeElement;
     el.exportModal.hidden = false;
@@ -1223,6 +1266,12 @@
         toast(`Kaydedilemedi. ${r.error}`, 'error');
       }
       return !!r.ok;
+    }
+    if (toClipboard) {
+      if (r.ok) return finishCopy(output);
+      if (r.canceled) toast('Kopyalama iptal edildi');
+      else toast(`Panoya kopyalanamadı. ${r.error}`, 'error');
+      return false;
     }
     if (r.ok) {
       markSaved();
@@ -1369,6 +1418,7 @@
       return;
     }
     if (ctrl && (k === 's' || e.code === 'KeyS')) { e.preventDefault(); doExport(!e.shiftKey); return; }
+    if (ctrl && e.shiftKey && (k === 'c' || e.code === 'KeyC')) { e.preventDefault(); copyToClipboard(); return; }
     if (ctrl && !e.altKey && (k === 'z' || e.code === 'KeyZ')) { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
     if (ctrl && !e.altKey && (k === 'y' || e.code === 'KeyY')) { e.preventDefault(); redo(); return; }
     if (ctrl || e.altKey) return;
@@ -1448,7 +1498,7 @@
     Object.assign(state, { file: null, info: null, duration: 0, inT: 0, outT: 0, now: 0, crop: null, mode: 'keep', proxy: false });
     el.app.dataset.state = 'empty';
     el.strip.innerHTML = '';
-    [el.btnPlay, el.inTime, el.outTime, el.btnFrame, el.btnPreview, el.optResize, el.optMute, el.btnExport, el.btnSaveAs,
+    [el.btnPlay, el.inTime, el.outTime, el.btnFrame, el.btnPreview, el.optResize, el.optMute, el.btnExport, el.btnSaveAs, $('btnCopy'),
       ...document.querySelectorAll('.seg button')].forEach((n) => { n.disabled = true; });
     el.inTime.value = el.outTime.value = fmtTime(0);
     el.tNow.textContent = el.tTotal.textContent = fmtTime(0);
@@ -1486,7 +1536,7 @@
       ['Oynat, durdur', 'Boşluk'], ['Başlangıç, bitiş', 'I  O'], ['Bir kare, bir saniye', '←  →  Shift'],
       ['Başa, sona', 'Home  End'], ['Sonucu önizle', 'P'], ['Geri al, yinele', 'Ctrl Z  Ctrl Y'],
       ['Video aç, kapat', 'Ctrl O  Ctrl W'], ['Kaydet, farklı kaydet', 'Ctrl S  Ctrl Shift S'],
-      ['Görsel yapıştır', 'Ctrl V'], ['Seçili çizimi sil', 'Delete'], ['Yakınlaştır, uzaklaştır', 'Ctrl +  Ctrl −  Ctrl 0'],
+      ['Panoya kopyala', 'Ctrl Shift C'], ['Görsel yapıştır', 'Ctrl V'], ['Seçili çizimi sil', 'Delete'], ['Yakınlaştır, uzaklaştır', 'Ctrl +  Ctrl −  Ctrl 0'],
       ['Menü', 'Alt  F10']
     ]) {
       const dt = document.createElement('dt'); dt.textContent = what;
@@ -1512,6 +1562,7 @@
       { label: 'Video aç…', keys: 'Ctrl O', run: openDialog },
       { label: 'Kaydet', keys: 'Ctrl S', run: () => doExport(true), on: () => hasFile() && hasEdits() && outputDuration() >= 0.05 },
       { label: 'Farklı kaydet…', keys: 'Ctrl Shift S', run: () => doExport(false), on: () => hasFile() && outputDuration() >= 0.05 },
+      { label: 'Panoya kopyala', keys: 'Ctrl Shift C', run: copyToClipboard, on: () => hasFile() && outputDuration() >= 0.05 && estimateSize() <= CLIP_MAX },
       { label: 'Bu kareyi PNG olarak kaydet…', run: saveFrame, on: hasFile },
       '-',
       { label: 'Klasörde göster', run: () => api.showInFolder(state.file), on: hasFile },
@@ -1647,6 +1698,7 @@
     if (el.appMenu.hidden) openAppMenu(true); else closeAppMenu(true);
   });
   window.addEventListener('blur', () => { altAlone = false; });
+  $('btnCopy').addEventListener('click', (e) => { if (e.detail > 0) e.currentTarget.blur(); copyToClipboard(); });
   el.btnUndo = $('btnUndo'); el.btnRedo = $('btnRedo');
   el.btnUndo.addEventListener('click', (e) => { if (e.detail > 0) e.currentTarget.blur(); undo(); });
   el.btnRedo.addEventListener('click', (e) => { if (e.detail > 0) e.currentTarget.blur(); redo(); });
@@ -1694,5 +1746,5 @@
   setTimeout(() => checkUpdate(false), 4000);
 
   // Test kancası (yalnızca geliştirme sırasında kullanılır)
-  window.__kesit = { state, openFile, requestOpen, addImageFile, hasUnsaved, closeFile, openAppMenu, setIn, setOut, seekTo, setRatio };
+  window.__kesit = { state, copyToClipboard, estimateSize, openFile, requestOpen, addImageFile, hasUnsaved, closeFile, openAppMenu, setIn, setOut, seekTo, setRatio };
 })();

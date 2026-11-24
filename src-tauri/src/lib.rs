@@ -332,6 +332,69 @@ fn open_path(app: AppHandle, path: String) -> Result<(), String> {
     app.opener().open_path(&path, None::<&str>).map_err(|e| e.to_string())
 }
 
+// ---------------- Pano ----------------
+// Panoya kopyalanan videolar uygulama kapandıktan sonra da yapıştırılabilsin diye ayrı bir klasörde durur;
+// bir günden eski olanlar açılışta silinir.
+
+fn clipboard_root() -> PathBuf {
+    std::env::temp_dir().join("kesit-pano")
+}
+
+fn clean_clipboard_root() {
+    let Ok(rd) = std::fs::read_dir(clipboard_root()) else { return };
+    let day = Duration::from_secs(24 * 3600);
+    for e in rd.flatten() {
+        let old = e.metadata().and_then(|m| m.modified()).ok().and_then(|t| t.elapsed().ok()).is_some_and(|age| age > day);
+        if old {
+            let _ = std::fs::remove_dir_all(e.path());
+        }
+    }
+}
+
+/// Panoya kopyalanacak çıktı için yeni bir klasör açar ve dosya yolunu döndürür.
+#[tauri::command]
+fn clipboard_target(name: String) -> Result<String, String> {
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0);
+    let dir = clipboard_root().join(stamp.to_string());
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let safe: String = name.chars().map(|c| if r#"\/:*?"<>|"#.contains(c) { '_' } else { c }).collect();
+    Ok(dir.join(safe).to_string_lossy().to_string())
+}
+
+/// Dosyayı panoya "dosya" olarak koyar: Gezgin'e, WhatsApp'a, Discord'a Ctrl+V ile yapıştırılır.
+#[tauri::command]
+async fn clipboard_copy_file(path: String) -> Result<(), String> {
+    if !Path::new(&path).is_file() {
+        return Err("Dosya bulunamadı".into());
+    }
+    #[cfg(windows)]
+    {
+        tauri::async_runtime::spawn_blocking(move || {
+            let out = hidden_command("powershell.exe")
+                .args(["-NoProfile", "-NonInteractive", "-STA", "-Command", "Set-Clipboard -LiteralPath $env:KESIT_PANO"])
+                .env("KESIT_PANO", &path)
+                .stdin(Stdio::null())
+                .output()
+                .map_err(|e| e.to_string())?;
+            if out.status.success() {
+                Ok(())
+            } else {
+                Err(String::from_utf8_lossy(&out.stderr).trim().to_string())
+            }
+        })
+        .await
+        .map_err(|e| e.to_string())?
+    }
+    #[cfg(not(windows))]
+    {
+        // Geliştirme: Linux'ta yolu bir dosyaya yazar (sınama bunu okur)
+        std::fs::write(std::env::temp_dir().join("kesit-pano-son.txt"), &path).map_err(|e| e.to_string())
+    }
+}
+
 // ---------------- Pencereler ----------------
 
 #[tauri::command]
@@ -543,6 +606,7 @@ pub fn run() {
     let _ = std::fs::create_dir_all(&tmp_root);
     let initial = file_from_args(&args);
     let temp_for_exit = tmp_root.clone();
+    std::thread::spawn(clean_clipboard_root);
 
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
@@ -586,6 +650,7 @@ pub fn run() {
             ff_run, ff_kill, ff_capture,
             fs_exists, fs_stat, fs_write_base64, fs_write_text, fs_rename, fs_remove, fs_remove_dir, fs_mkdtemp, temp_root,
             trash_item, set_hidden, reveal, open_path, open_url,
+            clipboard_target, clipboard_copy_file,
             initial_file, pick_video, pick_image, pick_save, update_check, update_install,
             get_settings, set_settings, set_zoom, selftest_report
         ])

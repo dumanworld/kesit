@@ -29,6 +29,11 @@ NASIL KULLANILIR
    Dönüşüm Kutusu'na gider. Yeni bir dosya için Farklı kaydet (Ctrl+Shift+S).
    Kaydetmeden başka bir video açarsan ya da pencereyi kapatırsan Kesit sorar.
 
+PANOYA KOPYALA
+Kaydet'in solundaki düğme (ya da Ctrl+Shift+C) videonun düzenlenmiş halini panoya
+dosya olarak koyar; WhatsApp, Discord ya da bir klasöre Ctrl+V ile yapıştırırsın.
+Tahmini boyut 500 MB'ı geçerse kapalıdır.
+
 GÜNCELLEME
 Kesit açılınca yeni sürüm olup olmadığına bakar. Varsa altta "Güncelle" çıkar;
 tıklayınca indirir, kurar ve yeniden açılır.

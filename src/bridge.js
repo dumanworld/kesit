@@ -348,6 +348,9 @@
       if (!r.ok) throw new Error('Görsel okunamadı');
       return r.blob();
     },
+    clipboardTarget: ({ input, ext }) => invoke('clipboard_target', { name: P.basename(input, P.extname(input)) + '_kesit' + ext }),
+    copyFileToClipboard: (path) => invoke('clipboard_copy_file', { path }).then(() => ({ ok: true }), (e) => ({ ok: false, error: String(e) })),
+    fileSize: async (path) => { const st = await invoke('fs_stat', { path }); return st ? st.size : 0; },
     appVersion: () => T.app.getVersion(),
     quit: () => appWindow.close(),
     openUrl: (url) => invoke('open_url', { url }).catch(() => {}),

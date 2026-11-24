@@ -157,6 +157,28 @@
     // --- Bilgisayardan görsel ---
     await K.openFile(work('land.mp4'));
     await until(() => K.state.file && K.state.file.endsWith('land.mp4') && K.state.annos.length === 0, 5000);
+    // --- Panoya kopyala ---
+    const toastHas = (re) => { const t = document.getElementById('toast'); return !t.hidden && re.test(t.textContent) ? t.textContent : null; };
+    const lastClip = async () => {
+      if (/Windows/.test(navigator.userAgent)) return null;
+      const r = await fetch(window.__TAURI__.core.convertFileSrc('/tmp/kesit-pano-son.txt') + '?' + Date.now());
+      return r.ok ? r.text() : null;
+    };
+    await ok('boyut tahmini', K.estimateSize() > 1e6 && K.estimateSize() < 2e7, K.estimateSize());
+    await K.copyToClipboard();
+    const c1 = await until(() => toastHas(/Panoya kopyalandı|kopyalanamadı/), 10000);
+    const p1c = await lastClip();
+    await ok('değişiklik yokken orijinal panoya', /Panoya kopyalandı/.test(c1 || '') && (p1c === null || p1c === work('land.mp4')), { c1, p1c });
+    K.setIn(6);
+    await sleep(200);
+    await K.copyToClipboard();
+    const c2 = await until(() => toastHas(/Panoya kopyalandı \(|kopyalanamadı/), 30000);
+    const p2c = await lastClip();
+    let d2 = null;
+    if (p2c) { const pr2 = await api.probe(p2c); d2 = pr2.ok && pr2.info.duration; }
+    await ok('kesilmiş hali panoya', /Panoya kopyalandı \(/.test(c2 || '') && (p2c === null || (/kesit-pano/.test(p2c) && /land_kesit\.mp4$/.test(p2c) && Math.abs(d2 - 4) < 0.2)), { c2, p2c, d2 });
+    await K.openFile(work('land.mp4'));
+    await until(() => K.state.annos.length === 0 && Math.abs(K.state.inT) < 0.01, 5000);
     await K.addImageFile(media('overlay.png'));
     await ok('bilgisayardan görsel eklendi', K.state.annos.length === 1 && K.state.annos[0].type === 'image' && /^data:image\/png/.test(K.state.annos[0].src));
 

@@ -9,6 +9,7 @@ Windows için hızlı video kesme ve kırpma uygulaması. Videoya sağ tıkla, "
 - Hassas mod (H.264 MP4, iPhone HDR'yi SDR'ye çevirir) ya da hızlı ve kayıpsız mod
 - Sol üstte Dosya / Düzen / Görünüm / Yardım menüsü, geri al ve yinele düğmeleri (Ctrl+Z / Ctrl+Y)
 - Kaydedilmemiş değişiklik varken başka dosya açınca ya da kapatınca sorar
+- Düzenlenen videoyu panoya dosya olarak kopyalar (Ctrl+Shift+C)
 - Kendini günceller
 
 Kullanım ve kısayollar [BENIOKU.txt](BENIOKU.txt) dosyasında.
