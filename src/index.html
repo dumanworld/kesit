@@ -10,6 +10,12 @@
 
   <header class="framebar" id="framebar">
     <div class="fb-left">
+      <div class="appmenu-wrap">
+        <button id="btnAppMenu" class="iconbtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="appMenu" aria-label="Menü" title="Menü (Alt)">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h12M4 10h12M4 14h8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <div class="appmenu" id="appMenu" role="menu" aria-label="Menü" hidden></div>
+      </div>
       <span class="history" hidden>
         <button id="btnUndo" class="iconbtn" type="button" aria-label="Geri al" title="Geri al (Ctrl Z)" disabled>
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5L2.5 6.5l3 3M2.5 6.5h7a3.5 3.5 0 0 1 0 7H8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -88,12 +94,6 @@
             </dl>
           </div>
         </div>
-      <div class="appmenu-wrap">
-        <button id="btnAppMenu" class="iconbtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="appMenu" aria-label="Menü" title="Menü (Alt)">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h12M4 10h12M4 14h8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        </button>
-        <div class="appmenu" id="appMenu" role="menu" aria-label="Menü" hidden></div>
-      </div>
     </div>
   </header>
 

@@ -815,7 +815,9 @@
     const edit = state.cropEdit;
     el.crop.classList.toggle('ghost', ghost);
     el.crop.classList.toggle('locked', !edit);
-    el.crop.hidden = ghost && !edit;
+    const peek = !edit && !!state.cropPeek && !state.tool && !state.cropView;
+    el.crop.classList.toggle('peek', peek);
+    el.crop.hidden = ghost && !edit && !peek;
     el.crop.tabIndex = edit && !ghost ? 0 : -1;
     $('btnCropReset').hidden = ghost;
     const P = (n) => `${n * 100}%`;
@@ -836,6 +838,8 @@
     if (e.button !== 0 || !state.info) return;
     const handle = e.target.dataset.corner || e.target.dataset.edge || null;
     if (!state.crop && !handle) return; // kadraj yokken yalnızca tutamaçlar çalışır
+    // Üstüne gelince görünen tutamaçlardan biri tutulunca kırpma açılır
+    if (handle && !state.cropEdit) setCropEdit(true);
     // Çizim aracı seçiliyken ya da bir çizimin üstündeyken kadrajın içi çizime bırakılır
     if (!handle && (state.tool || hitTest(toVideo(e)))) return;
     e.stopPropagation();
@@ -978,32 +982,38 @@
   document.querySelectorAll('.ratio').forEach((b) => b.addEventListener('click', () => { setRatio(b.dataset.ratio, false); setCropEdit(b.dataset.ratio !== 'orig'); closeRatioMenu(b.matches(':focus-visible')); }));
 
   // Kırp düğmesi kırpmayı açıp kapatır; yanındaki ok oranları açar.
-  // Düğmelere ek olarak: fare videonun üstünde 2 sn kıpırdamadan durursa kırpma tutamaçları,
-  // film şeridinin üstünde durursa kesme tutamaçları belirir (video duruyorken).
-  // Böyle açılan mod, hiçbir şey değiştirilmeden fare o bölgeden çıkınca kendiliğinden kapanır.
-  const DWELL_MS = 2000;
-  function dwellEdit(area, zone, isOn, setOn, snap) {
-    let timer = 0, lastX = -1, lastY = -1, auto = null;
-    area.addEventListener('pointermove', (e) => {
+  // Düğmelere ek olarak:
+  //  - fare film şeridinin tam üstünde 1 sn kıpırdamadan durursa kesme tutamaçları belirir,
+  //    şeritten çıkınca hemen kaybolur (Kes düğmesiyle açıldıysa kalır);
+  //  - fare videonun üstündeyken kırpma tutamaçları hemen görünür; kırpma ancak bir tutamaç
+  //    sürüklenince açılır.
+  const DWELL_MS = 1000;
+  {
+    let timer = 0, lastX = -1, lastY = -1, auto = false;
+    el.track.addEventListener('pointermove', (e) => {
       if (Math.abs(e.clientX - lastX) < 3 && Math.abs(e.clientY - lastY) < 3) return; // titremeyi hareket sayma
       lastX = e.clientX; lastY = e.clientY;
       clearTimeout(timer);
-      if (!state.info || e.buttons || isOn() || state.tool || !v.paused) return;
+      if (!state.info || e.buttons || state.cutEdit || state.tool) return;
       timer = setTimeout(() => {
-        if (isOn() || state.tool || !v.paused || asking || state.exporting) return;
-        setOn(true); auto = snap();
+        if (state.cutEdit || state.tool || asking || state.exporting || state.drag) return;
+        setCutEdit(true); auto = true;
       }, DWELL_MS);
     });
-    area.addEventListener('pointerleave', () => clearTimeout(timer));
-    area.addEventListener('pointerdown', () => clearTimeout(timer));
-    zone.addEventListener('pointerleave', () => {
+    el.track.addEventListener('pointerdown', () => { clearTimeout(timer); });
+    const leave = () => {
       clearTimeout(timer);
-      if (auto !== null && isOn() && snap() === auto) setOn(false);
-      auto = null;
-    });
+      if (auto && state.cutEdit && !state.drag) setCutEdit(false);
+      if (!state.drag) auto = false;
+    };
+    el.track.addEventListener('pointerleave', leave);
+    el.track.addEventListener('lostpointercapture', (e) => { if (!el.track.matches(':hover')) leave(); });
+    $('btnCut').addEventListener('click', () => { auto = false; }, true);
   }
-  dwellEdit($('viewport'), $('stage'), () => state.cropEdit, (on) => setCropEdit(on), () => JSON.stringify([state.crop, state.ratioKey]));
-  dwellEdit(el.track, document.querySelector('.transport'), () => state.cutEdit, (on) => setCutEdit(on), () => JSON.stringify(state.segs));
+  const stageEl = $('stage');
+  const setPeek = (on) => { if (state.cropPeek !== on) { state.cropPeek = on; layoutFrame(); } };
+  stageEl.addEventListener('pointerenter', () => setPeek(true));
+  stageEl.addEventListener('pointerleave', () => { if (!state.cropDrag) setPeek(false); });
   function toggleCropView() {
     state.cropView = !state.cropView;
     try { localStorage.setItem('kesit.cropView', state.cropView ? '1' : '0'); } catch {}
