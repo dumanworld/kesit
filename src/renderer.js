@@ -471,7 +471,12 @@
   function renderPlayhead() {
     el.playhead.style.left = pct(state.now);
     el.tNow.textContent = fmtTime(resultTime(state.now));
-    $('phTime').textContent = fmtTime(state.now);
+    const pill = $('phTime');
+    pill.textContent = fmtTime(state.now);
+    // Başta ve sonda balon şeridin dışına taşmasın: yarı genişliği kadar içeri kaydır
+    const tw = el.track.clientWidth, x = tw * (state.duration ? state.now / state.duration : 0), half = pill.offsetWidth / 2;
+    const shift = tw ? Math.max(half - x, 0) - Math.max(x + half - tw, 0) : 0;
+    pill.style.transform = `translateX(calc(-50% + ${shift}px))`;
     setSliderAria(el.playhead, state.now, state.duration);
   }
   // Film şeridi: tutulan parçalar açık, atılan aralıklar soluk; her parçanın iki ucunda tutamaç

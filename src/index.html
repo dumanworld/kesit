@@ -157,6 +157,12 @@
         <svg class="i-play" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 3.8v12.4L16 10z" fill="currentColor"/></svg>
         <svg class="i-pause" viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="4" width="3.4" height="12" rx="1" fill="currentColor"/><rect x="11.6" y="4" width="3.4" height="12" rx="1" fill="currentColor"/></svg>
       </button>
+        <div class="volume-wrap">
+          <label class="volume" tabindex="-1" title="Önizleme ses düzeyi (kaydedilen dosyayı etkilemez)">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 7.5h2.8L10 4.5v11l-3.7-3H3.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M13 7.3a3.6 3.6 0 0 1 0 5.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <input type="range" id="volume" min="0" max="100" value="100" aria-label="Önizleme ses düzeyi">
+        </label>
+        </div>
         <div class="readout">
           <div class="clock"><span id="tNow">0:00.00</span><span class="of" id="tTotal">0:00.00</span></div>
           <span class="summary" aria-live="polite">
@@ -186,11 +192,6 @@
       </div>
 
       <div class="ctl-right">
-        <label class="volume" title="Önizleme ses düzeyi (kaydedilen dosyayı etkilemez)">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 7.5h2.8L10 4.5v11l-3.7-3H3.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M13 7.3a3.6 3.6 0 0 1 0 5.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          <input type="range" id="volume" min="0" max="100" value="100" aria-label="Önizleme ses düzeyi">
-        </label>
-        <span class="vsep" aria-hidden="true"></span>
         <button id="btnSaveAs" class="btn" type="button" title="Yeni dosya olarak kaydet (Ctrl Shift S)" disabled>Farklı kaydet</button>
         <button id="btnExport" class="btn primary" type="button" title="Aynı klasöre yeni dosya olarak kaydeder, orijinal değişmez (Ctrl S)" disabled><span id="btnExportLabel">Kaydet</span></button>
         <button id="btnCopy" class="btn primary iconly" type="button" aria-label="Panoya kopyala" title="Panoya kopyala (Ctrl Shift C)" disabled>
