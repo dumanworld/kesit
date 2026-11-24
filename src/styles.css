@@ -1086,3 +1086,6 @@ body.dragging .drop-hint { display: flex; }
 .save-menu .mitem.two.current .mi-ico { color: var(--accent); }
 .save-menu .mitem.two.current b { font-weight: 600; }
 .save-menu .mitem.two:disabled .mi-ico { color: var(--text-disabled); }
+/* Kırp/Kes zemini iki temada da video alanıyla aynı ton */
+:root { --well: var(--stage); --well-edge: inset 0 0 0 1px rgba(0, 0, 0, .04); }
+:root[data-theme="dark"] { --well: var(--stage); --well-edge: inset 0 0 0 1px rgba(0, 0, 0, .12); }
