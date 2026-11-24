@@ -30,7 +30,7 @@
     sel: $('sel'), hIn: $('hIn'), hOut: $('hOut'), playhead: $('playhead'),
     exportModal: $('exportModal'), exLabel: $('exLabel'), exBar: $('exBar'), exPct: $('exPct'), btnCancel: $('btnCancel'),
     toast: $('toast'), toastText: $('toastText'), toastActions: $('toastActions'), toastClose: $('toastClose'),
-    appMenu: $('appMenu')
+    btnAppMenu: $('btnAppMenu'), appMenu: $('appMenu')
   };
   const v = el.video;
 
@@ -559,6 +559,7 @@
     $('btnCrop').classList.toggle('active', state.cropEdit);
     $('btnCrop').classList.toggle('cropped', cropped && !state.cropEdit);
     $('btnRatio').classList.toggle('active', state.cropEdit);
+    $('ratioMenu').hidden = !(state.cropEdit && state.info); // oranlar yalnız kırparken Kırp'ın yanında görünür
     $('btnCrop').setAttribute('aria-pressed', String(state.cropEdit));
     $('btnCrop').title = state.cropEdit ? 'Kırpmayı bitir' : 'Kırp: kırpma çerçevesini düzenle';
     $('btnCut').classList.toggle('active', state.cutEdit);
@@ -1001,33 +1002,27 @@
   });
   // Kadraj seçici: üstte tek düğme, oranlar tıklayınca açılan menüde
   const ratioMenu = $('ratioMenu'), btnRatio = $('btnRatio');
+  // Açılır ok yok: oranlar kırpma açıkken Kırp düğmesinin yanında satır olarak durur
   function openRatioMenu(focus) {
-    ratioMenu.hidden = false;
-    btnRatio.setAttribute('aria-expanded', 'true');
-    if (focus) (ratioMenu.querySelector('.ratio[aria-checked="true"]') || ratioMenu.querySelector('.ratio')).focus();
+    if (focus && !ratioMenu.hidden) (ratioMenu.querySelector('.ratio[aria-checked="true"]') || ratioMenu.querySelector('.ratio')).focus();
   }
   function closeRatioMenu(returnFocus) {
-    if (ratioMenu.hidden) return;
-    ratioMenu.hidden = true;
-    btnRatio.setAttribute('aria-expanded', 'false');
-    if (returnFocus) btnRatio.focus();
+    if (returnFocus && ratioMenu.contains(document.activeElement)) $('btnCrop').focus();
   }
   btnRatio.addEventListener('click', (e) => {
     if (ratioMenu.hidden) openRatioMenu(e.detail === 0); else closeRatioMenu(e.detail === 0);
     if (e.detail > 0) btnRatio.blur();
   });
-  document.addEventListener('pointerdown', (e) => { if (!e.target.closest('.ratio-wrap')) closeRatioMenu(false); });
   ratioMenu.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeRatioMenu(true); return; }
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); $('btnCrop').focus(); setCropEdit(false); return; }
+    if (['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft'].includes(e.key)) {
       const items = [...ratioMenu.querySelectorAll('button:not([hidden])')];
       const i = items.indexOf(document.activeElement);
-      items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+      items[(i + (e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : -1) + items.length) % items.length].focus();
       e.preventDefault();
     }
     if (e.key !== 'Tab') e.stopPropagation();
   });
-  ratioMenu.addEventListener('focusout', (e) => { if (e.relatedTarget && !e.relatedTarget.closest('.ratio-wrap')) closeRatioMenu(false); });
 
   el.optFast.addEventListener('change', () => { state.quality = el.optFast.checked ? 'fast' : 'precise'; renderAll(); });
   el.optMute.addEventListener('change', () => { state.mute = el.optMute.checked; renderAll(); });
@@ -1686,7 +1681,7 @@
       return;
     }
     if (updating) { e.preventDefault(); return; }
-    if (menuOpen()) return; // menü kendi tuşlarını işler
+    if (!el.appMenu.hidden) return; // menü kendi tuşlarını işler
     if (!$('infoModal').hidden) return;
     if (e.key === 'F10') { e.preventDefault(); openAppMenu(true); return; }
     if (ctrl && (k === 'w' || e.code === 'KeyW')) { e.preventDefault(); closeFile(); return; }
@@ -1861,7 +1856,7 @@
     ], 20000);
   }
 
-  // ---------- Menü çubuğu (sol üst): Dosya, Düzen, Görünüm, Yardım ----------
+  // ---------- Uygulama menüsü (sol üst) ----------
   const hasFile = () => !!state.info && !state.exporting;
   const MENU = [
     { label: 'Dosya', items: [
@@ -1915,6 +1910,7 @@
       { label: 'Kesit hakkında', run: showAbout }
     ] }
   ];
+  const CHEVRON = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function buildAppMenu() {
     const root = el.appMenu;
     root.replaceChildren();
@@ -1924,7 +1920,8 @@
       const parent = document.createElement('button');
       parent.type = 'button'; parent.className = 'mitem am-parent';
       parent.setAttribute('role', 'menuitem'); parent.setAttribute('aria-haspopup', 'menu'); parent.setAttribute('aria-expanded', 'false');
-      parent.textContent = group.label;
+      parent.innerHTML = CHEVRON;
+      parent.prepend(group.label);
       const sub = document.createElement('div');
       sub.className = 'appmenu am-sub'; sub.setAttribute('role', 'menu'); sub.setAttribute('aria-label', group.label); sub.hidden = true;
       for (const it of group.items) {
@@ -1938,13 +1935,8 @@
         b._item = it;
         sub.append(b);
       }
-      parent.addEventListener('click', (e) => {
-        if (parent.getAttribute('aria-expanded') === 'true') { closeAppMenu(false); return; }
-        openSub(g, e.detail === 0);
-        if (e.detail > 0) parent.focus({ focusVisible: false }); // ok tuşları fareyle açınca da çalışsın
-      });
-      // Bir menü açıkken diğer başlığın üstüne gelmek o menüye geçer (Windows menü çubuğu gibi)
-      parent.addEventListener('pointerenter', () => { if (menuOpen()) { openSub(g, false); parent.focus({ focusVisible: false }); } });
+      parent.addEventListener('click', () => openSub(g, true));
+      parent.addEventListener('pointerenter', () => openSub(g, false));
       g.append(parent, sub);
       root.append(g);
     }
@@ -1966,23 +1958,28 @@
     el.appMenu.querySelectorAll('.am-sub').forEach((x) => { x.hidden = true; });
     el.appMenu.querySelectorAll('.am-parent').forEach((x) => x.setAttribute('aria-expanded', 'false'));
   }
-  const menuOpen = () => !!el.appMenu.querySelector('.am-parent[aria-expanded="true"]');
   function openAppMenu(focusFirst) {
     if (asking || updating || state.exporting || !$('infoModal').hidden) return;
     closeMenu(false);
-    openSub(el.appMenu.querySelector('.am-group'), false);
+    if (!el.appMenu.childElementCount) buildAppMenu();
+    closeSubs();
+    el.appMenu.hidden = false;
+    el.btnAppMenu.setAttribute('aria-expanded', 'true');
     if (focusFirst) el.appMenu.querySelector('.am-parent').focus();
   }
   function closeAppMenu(returnFocus) {
-    if (!menuOpen()) return;
-    const cur = el.appMenu.querySelector('.am-parent[aria-expanded="true"]');
+    if (el.appMenu.hidden) return;
     closeSubs();
-    if (returnFocus) cur.focus(); else if (el.appMenu.contains(document.activeElement)) document.activeElement.blur();
+    el.appMenu.hidden = true;
+    el.btnAppMenu.setAttribute('aria-expanded', 'false');
+    if (returnFocus) el.btnAppMenu.focus(); else if (el.appMenu.contains(document.activeElement)) document.activeElement.blur();
   }
-  buildAppMenu();
-  el.appMenu.hidden = false;
+  el.btnAppMenu.addEventListener('click', (e) => {
+    if (el.appMenu.hidden) openAppMenu(e.detail === 0); else closeAppMenu(e.detail === 0);
+    if (e.detail > 0) el.btnAppMenu.blur();
+  });
   document.addEventListener('pointerdown', (e) => {
-    if (menuOpen() && !e.target.closest('.appmenu-wrap')) closeAppMenu(false);
+    if (!el.appMenu.hidden && !e.target.closest('.appmenu-wrap')) closeAppMenu(false);
   });
   el.appMenu.addEventListener('keydown', (e) => {
     const cur = document.activeElement;
@@ -1990,20 +1987,15 @@
     const list = [...(inSub ? inSub : el.appMenu).querySelectorAll(inSub ? '.mitem:not(:disabled)' : '.am-parent')];
     const i = list.indexOf(cur);
     const move = (d) => { const n = list[(i + d + list.length) % list.length]; if (n) n.focus(); };
-    const parents = [...el.appMenu.querySelectorAll('.am-parent')];
-    const curParent = inSub ? inSub.parentElement.querySelector('.am-parent') : cur;
-    const pi = parents.indexOf(curParent);
-    const side = (d) => { const n = parents[(pi + d + parents.length) % parents.length]; if (menuOpen()) openSub(n.parentElement, true); else n.focus(); };
-    if (e.key === 'ArrowRight') { e.preventDefault(); side(1); }
-    else if (e.key === 'ArrowLeft') { e.preventDefault(); side(-1); }
-    else if (e.key === 'ArrowDown' && !inSub) { e.preventDefault(); openSub(cur.parentElement, true); }
-    else if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
-    else if (e.key === 'ArrowUp' && inSub) { e.preventDefault(); move(-1); }
-    else if (e.key === 'Home' && inSub) { e.preventDefault(); list[0] && list[0].focus(); }
-    else if (e.key === 'End' && inSub) { e.preventDefault(); list[list.length - 1] && list[list.length - 1].focus(); }
-    else if (e.key === 'Escape' && inSub) {
-      e.preventDefault(); e.stopPropagation(); closeAppMenu(true);
-    } else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (menuOpen()) closeAppMenu(false); cur.blur(); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+    else if (e.key === 'Home') { e.preventDefault(); list[0] && list[0].focus(); }
+    else if (e.key === 'End') { e.preventDefault(); list[list.length - 1] && list[list.length - 1].focus(); }
+    else if (e.key === 'ArrowRight' && !inSub && cur.classList.contains('am-parent')) { e.preventDefault(); openSub(cur.parentElement, true); }
+    else if ((e.key === 'ArrowLeft' || e.key === 'Escape') && inSub) {
+      e.preventDefault(); e.stopPropagation();
+      const g = inSub.parentElement; closeSubs(); g.querySelector('.am-parent').focus();
+    } else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeAppMenu(true); }
     else if (e.key === 'Tab') { closeAppMenu(false); }
     else if (e.key.length === 1 && !e.ctrlKey && !e.altKey) {
       // Harfle atla: "D" Dosya / Düzen arasında gezer
@@ -2020,7 +2012,7 @@
     if (e.key !== 'Alt' || !altAlone) return;
     altAlone = false;
     e.preventDefault();
-    if (!menuOpen() && !el.appMenu.contains(document.activeElement)) openAppMenu(true); else { closeAppMenu(false); document.activeElement.blur(); }
+    if (el.appMenu.hidden) openAppMenu(true); else closeAppMenu(true);
   });
   window.addEventListener('blur', () => { altAlone = false; });
   $('btnCopy').addEventListener('click', (e) => { if (e.detail > 0) e.currentTarget.blur(); copyToClipboard(); });
