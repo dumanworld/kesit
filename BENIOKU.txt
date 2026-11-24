@@ -70,6 +70,9 @@ Doğrudan oynatılamayan videolar (ör. bazı HEVC veya ProRes dosyaları) için
 uygulama hafif bir önizleme kopyası hazırlar; dışa aktarma her zaman
 orijinal dosyadan yapılır.
 
+Windows 11'de "Kesit ile düzenle" normalde "Diğer seçenekleri göster" altındadır.
+İlk sağ tıkta görünmesi için Görünüm > Klasik sağ tık menüsü'nü aç: tüm sağ tık
+menüleri Windows 10'daki gibi tek seferde açılır. Aynı yerden geri alınır.
 Sağ tık menüsü Kesit'i kaldırınca kendiliğinden silinir. Taşınabilir sürümde
 kaldırmak için Kesit.exe'yi --sag-tik-kaldir parametresiyle bir kez çalıştır.
 

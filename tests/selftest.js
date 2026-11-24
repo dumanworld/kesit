@@ -255,6 +255,19 @@
     await ok('boşken geri al kapalı', document.getElementById('btnUndo').disabled);
     await ok('geliştirme sürümünde güncelleme denetimi kapalı', (await api.checkUpdate()) === null);
 
+    // --- Klasik sağ tık menüsü (yalnızca Windows) ---
+    if (api.isWindows) {
+      const before = await api.classicMenuGet();
+      const on = await api.classicMenuSet(true);
+      const got1 = await api.classicMenuGet();
+      const off = await api.classicMenuSet(false);
+      const got2 = await api.classicMenuGet();
+      if (before) await api.classicMenuSet(true);
+      await ok('klasik sağ tık menüsü aç/kapat', on.ok && got1 === true && off.ok && got2 === false, { on, got1, off, got2 });
+    } else {
+      await report('SKIP klasik sağ tık menüsü — yalnızca Windows');
+    }
+
     // --- Yakınlaştırma ---
     const z = await api.zoomStep(1);
     await ok('yakınlaştırma', Math.abs(z - 1.1) < 0.01 && Math.abs((await api.getZoom()) - 1.1) < 0.01, z);

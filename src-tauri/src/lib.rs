@@ -592,6 +592,66 @@ fn selftest_report(app: AppHandle, text: String, done: bool) {
     }
 }
 
+// ---------------- Windows 11 klasik sağ tık menüsü ----------------
+// Bu anahtar varken Gezgin, Windows 10'daki tam menüyü ilk sağ tıkta açar ("Kesit ile düzenle" dahil).
+// Yalnızca bu kullanıcıyı etkiler; Kesit'in menüsünden kapatılınca anahtar silinir.
+
+#[cfg(windows)]
+const CLASSIC_MENU_KEY: &str = r"HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}";
+
+#[tauri::command]
+fn classic_menu_get() -> bool {
+    #[cfg(windows)]
+    {
+        hidden_command("reg")
+            .args(["query", &format!(r"{CLASSIC_MENU_KEY}\InprocServer32")])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false)
+    }
+    #[cfg(not(windows))]
+    false
+}
+
+#[tauri::command]
+fn classic_menu_set(on: bool) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        let sub = format!(r"{CLASSIC_MENU_KEY}\InprocServer32");
+        let res = if on {
+            hidden_command("reg").args(["add", sub.as_str(), "/ve", "/t", "REG_SZ", "/d", "", "/f"]).output()
+        } else {
+            hidden_command("reg").args(["delete", CLASSIC_MENU_KEY, "/f"]).output()
+        };
+        let out = res.map_err(|e| e.to_string())?;
+        if out.status.success() || (!on && !classic_menu_get()) {
+            Ok(())
+        } else {
+            Err(String::from_utf8_lossy(&out.stderr).trim().to_string())
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = on;
+        Err("Yalnızca Windows'ta".into())
+    }
+}
+
+/// Gezgin'i yeniden başlatır; menü değişikliği hemen görünür (açık Gezgin pencereleri kapanır).
+#[tauri::command]
+fn restart_explorer() -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        let _ = hidden_command("taskkill").args(["/f", "/im", "explorer.exe"]).status();
+        std::thread::sleep(Duration::from_millis(800));
+        Command::new("explorer.exe").spawn().map(|_| ()).map_err(|e| e.to_string())
+    }
+    #[cfg(not(windows))]
+    Err("Yalnızca Windows'ta".into())
+}
+
 // ---------------- Başlangıç ----------------
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -650,7 +710,7 @@ pub fn run() {
             ff_run, ff_kill, ff_capture,
             fs_exists, fs_stat, fs_write_base64, fs_write_text, fs_rename, fs_remove, fs_remove_dir, fs_mkdtemp, temp_root,
             trash_item, set_hidden, reveal, open_path, open_url,
-            clipboard_target, clipboard_copy_file,
+            clipboard_target, clipboard_copy_file, classic_menu_get, classic_menu_set, restart_explorer,
             initial_file, pick_video, pick_image, pick_save, update_check, update_install,
             get_settings, set_settings, set_zoom, selftest_report
         ])

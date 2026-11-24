@@ -1555,6 +1555,22 @@
     showInfo('Kesit', box);
   }
 
+  // ---------- Windows 11 klasik sağ tık menüsü ----------
+  let classicMenu = false;
+  if (api.isWindows) api.classicMenuGet().then((on) => { classicMenu = !!on; }).catch(() => {});
+  async function toggleClassicMenu() {
+    const on = !classicMenu;
+    const r = await api.classicMenuSet(on);
+    if (!r.ok) { toast(`Ayar değiştirilemedi. ${r.error}`, 'error'); return; }
+    classicMenu = on;
+    toast(on
+      ? 'Klasik menü açıldı. Görünmesi için Gezgin yeniden başlamalı (açık klasör pencereleri kapanır)'
+      : 'Windows 11 menüsüne dönüldü. Görünmesi için Gezgin yeniden başlamalı (açık klasör pencereleri kapanır)', 'ok', [
+      { label: 'Şimdi yeniden başlat', primary: true, fn: () => { hideToast('closed'); api.restartExplorer(); } },
+      { label: 'Sonra', fn: () => hideToast('closed') }
+    ], 20000);
+  }
+
   // ---------- Uygulama menüsü (sol üst) ----------
   const hasFile = () => !!state.info && !state.exporting;
   const MENU = [
@@ -1587,7 +1603,8 @@
       { label: 'Uzaklaştır', keys: 'Ctrl −', run: () => api.zoomStep(-1) },
       { label: 'Gerçek boyut', keys: 'Ctrl 0', run: () => api.zoomStep(0) },
       '-',
-      { label: 'Sonucu önizle', keys: 'P', run: previewResult, on: hasFile }
+      { label: 'Sonucu önizle', keys: 'P', run: previewResult, on: hasFile },
+      ...(api.isWindows ? ['-', { label: 'Klasik sağ tık menüsü', check: () => classicMenu, run: toggleClassicMenu }] : [])
     ] },
     { label: 'Yardım', items: [
       { label: 'Klavye kısayolları', run: showKeys },
@@ -1614,8 +1631,9 @@
       for (const it of group.items) {
         if (it === '-') { const sep = document.createElement('div'); sep.className = 'msep'; sep.setAttribute('role', 'separator'); sub.append(sep); continue; }
         const b = document.createElement('button');
-        b.type = 'button'; b.className = 'mitem'; b.setAttribute('role', 'menuitem');
+        b.type = 'button'; b.className = 'mitem'; b.setAttribute('role', it.check ? 'menuitemcheckbox' : 'menuitem');
         b.textContent = it.label;
+        if (it.check) b.title = "Windows 11'de videoya ilk sağ tıklamada \"Kesit ile düzenle\" görünsün. Tüm sağ tık menüleri Windows 10'daki gibi açılır";
         if (it.keys) { const k = document.createElement('span'); k.className = 'am-keys'; k.textContent = it.keys; b.append(k); }
         b.addEventListener('click', () => { closeAppMenu(false); it.run(); });
         b._item = it;
@@ -1634,7 +1652,10 @@
       other.querySelector('.am-parent').setAttribute('aria-expanded', String(on));
     }
     const sub = g.querySelector('.am-sub');
-    sub.querySelectorAll('.mitem').forEach((b) => { b.disabled = !!(b._item.on && !b._item.on()); });
+    sub.querySelectorAll('.mitem').forEach((b) => {
+      b.disabled = !!(b._item.on && !b._item.on());
+      if (b._item.check) b.setAttribute('aria-checked', String(!!b._item.check()));
+    });
     if (focusFirst) { const f = sub.querySelector('.mitem:not(:disabled)'); if (f) f.focus(); }
   }
   function closeSubs() {
