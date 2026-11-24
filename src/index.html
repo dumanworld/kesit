@@ -44,6 +44,10 @@
         <button type="button" class="mitem" id="btnCropReset" hidden>Kadrajı sıfırla</button>
       </div>
       </div>
+        <button type="button" class="dropbtn" id="btnCut" aria-pressed="false" title="Kes: film şeridinde sürükleyerek aralık kes ya da geri ekle">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="5.5" cy="14.5" r="2.3" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="14.5" cy="14.5" r="2.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7.2 12.8L14.5 3.5M12.8 12.8L5.5 3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span>Kes</span>
+        </button>
         <span class="vsep" aria-hidden="true"></span>
         <div class="tools" role="group" aria-label="Çizim">
       <button type="button" class="tool" data-tool="arrow" aria-pressed="false" aria-label="Ok" title="Ok çiz: videonun üzerinde sürükle">
@@ -146,7 +150,8 @@
         <div hidden class="handle out" id="hOut" title="Bitiş (O)" role="slider" tabindex="0" aria-label="Bitiş" aria-valuemin="0"><i></i></div>
         <div class="segs" id="segs"></div>
         <div class="pending" id="pending" hidden></div>
-        <div class="playhead" id="playhead" role="slider" tabindex="0" aria-label="Oynatma konumu" aria-valuemin="0"></div>
+        <div class="playhead" id="playhead" role="slider" tabindex="0" aria-label="Oynatma konumu" aria-valuemin="0"><span class="ph-time" id="phTime">0:00.00</span></div>
+        <div class="edge-tip" id="edgeTip" hidden></div>
       </div>
     </div>
 

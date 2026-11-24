@@ -22,7 +22,8 @@ NASIL KULLANILIR
    sürükle ya da kopyaladığın görseli Ctrl+V ile yapıştır: kırmızı çerçeveli
    yuvarlak olarak eklenir. Çizimleri sürükleyerek taşı,
    tutamaçlardan boyutlandır, Delete ya da × ile sil. Kaydederken videoya işlenir.
-4. Kesmek için film şeridini kullan: videonun kalan bir kısmında sürüklersen
+4. Kesmek için üstteki "Kes" düğmesine bas, sonra film şeridini kullan
+   (Kes kapalıyken şerit yalnızca videoda gezmek içindir): kalan bir kısımda sürüklersen
    o aralık kesilir, soluk (kesilmiş) bir yerde sürüklersen orası yeniden
    eklenir. Böylece birden çok parça bırakabilirsin; kaydederken birleşir.
    Parçaların uçlarındaki tutamaçları sürükleyerek ince ayar yapılır.

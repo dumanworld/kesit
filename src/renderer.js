@@ -38,7 +38,7 @@
 
   const state = {
     file: null, info: null, duration: 0, srcExt: '.mp4',
-    inT: 0, outT: 0, now: 0, segs: [], cropEdit: false, // segs: kalacak parçalar [[başlangıç, bitiş], …], sıralı ve çakışmasız
+    inT: 0, outT: 0, now: 0, segs: [], cropEdit: false, cutEdit: false, // segs: kalacak parçalar [[başlangıç, bitiş], …], sıralı ve çakışmasız
     mode: 'keep', quality: 'precise', ratioKey: 'orig', crop: null, mute: false, resize: false,
     proxy: false, proxyFor: null, loadToken: 0, loadTimer: null,
     drag: null, cropDrag: null, pendingSeek: null, preview: null, raf: null,
@@ -471,6 +471,7 @@
   function renderPlayhead() {
     el.playhead.style.left = pct(state.now);
     el.tNow.textContent = fmtTime(resultTime(state.now));
+    $('phTime').textContent = fmtTime(state.now);
     setSliderAria(el.playhead, state.now, state.duration);
   }
   // Film şeridi: tutulan parçalar açık, atılan aralıklar soluk; her parçanın iki ucunda tutamaç
@@ -555,6 +556,9 @@
     $('btnRatio').classList.toggle('active', state.cropEdit);
     $('btnCrop').setAttribute('aria-pressed', String(state.cropEdit));
     $('btnCrop').title = state.cropEdit ? 'Kırpmayı bitir' : 'Kırp: kırpma çerçevesini düzenle';
+    $('btnCut').classList.toggle('active', state.cutEdit);
+    $('btnCut').setAttribute('aria-pressed', String(state.cutEdit));
+    $('btnCut').title = state.cutEdit ? 'Kesmeyi bitir' : 'Kes: film şeridinde sürükleyerek aralık kes ya da geri ekle';
     const muted = state.mute && state.info && state.info.hasAudio;
     $('btnMute').classList.toggle('muted', !!muted);
     $('btnMute').setAttribute('aria-pressed', String(!!muted));
@@ -593,7 +597,9 @@
     if (!state.info || e.button !== 0) return;
     const h = e.target.closest('.handle');
     const t0 = xToTime(e.clientX);
-    if (h && h.dataset.i != null) {
+    if (!state.cutEdit) {
+      state.drag = { kind: 'seek' }; // Kes kapalıyken şeridin her yeri videoda gezer
+    } else if (h && h.dataset.i != null) {
       state.drag = { kind: 'edge', i: +h.dataset.i, side: h.dataset.side };
     } else {
       state.drag = { kind: 'range', t0, x0: e.clientX, keep: segAt(t0) >= 0, moved: false };
@@ -602,7 +608,7 @@
     cancelPreview();
     v.pause();
     el.track.setPointerCapture(e.pointerId);
-    if (state.drag.kind === 'edge') applyDrag(e.clientX);
+    if (state.drag.kind !== 'range') applyDrag(e.clientX);
   });
   el.ruler.addEventListener('pointerdown', (e) => {
     if (!state.info || e.button !== 0) return;
@@ -629,6 +635,7 @@
     if (!d) return;
     state.drag = null;
     pending.hidden = true;
+    $('edgeTip').hidden = true;
     if (d.kind === 'range') {
       if (d.moved) {
         const t1 = xToTime(e.clientX);
@@ -694,7 +701,13 @@
     const t = xToTime(clientX);
     if (d.kind === 'edge') {
       moveEdge(d.i, d.side, t);
-      seekTo(d.side === 'in' ? state.segs[d.i][0] : state.segs[d.i][1]);
+      const et = d.side === 'in' ? state.segs[d.i][0] : state.segs[d.i][1];
+      seekTo(et);
+      const tip = $('edgeTip');
+      tip.hidden = false;
+      tip.className = `edge-tip ${d.side}`;
+      tip.style.left = pct(et);
+      tip.textContent = `${d.side === 'in' ? 'Baş' : 'Son'} ${fmtTime(et)}`;
     } else if (d.kind === 'range') {
       if (!d.moved && Math.abs(clientX - d.x0) < 4) return;
       d.moved = true;
@@ -936,9 +949,30 @@
     if (state.cropEdit === on) return;
     state.cropEdit = on;
     if (on && state.tool) setTool(state.tool); // kırparken çizim aracı kapanır
+    if (on) setCutEdit(false);
     renderOptions();
     layoutFrame();
   }
+  function setCutEdit(on) {
+    on = !!on && !!state.info;
+    if (state.cutEdit === on) return;
+    state.cutEdit = on;
+    if (on && state.tool) setTool(state.tool);
+    if (on) setCropEdit(false);
+    el.track.classList.toggle('cutting', on);
+    renderOptions();
+  }
+  $('btnCut').addEventListener('click', (e) => {
+    if (e.detail > 0) e.currentTarget.blur();
+    setCutEdit(!state.cutEdit);
+  });
+  // Kesme açıkken film şeridi dışına tıklamak onu kapatır (cetvel ve oynatma düğmeleri hariç).
+  document.addEventListener('pointerdown', (e) => {
+    if (!state.cutEdit) return;
+    if (e.target.closest('.timeline, #btnCut, .ctl-mid, .appmenu-wrap, .modal, .toast')) return;
+    if (e.target.closest('.viewport')) state.annoClickGuard = true;
+    setCutEdit(false);
+  }, true);
   $('btnCrop').addEventListener('click', (e) => {
     if (e.detail > 0) e.currentTarget.blur();
     setCropEdit(!state.cropEdit);
@@ -1144,6 +1178,7 @@
   function setTool(t) {
     state.tool = state.tool === t ? null : t;
     if (state.tool && state.cropEdit) { state.cropEdit = false; renderOptions(); layoutFrame(); }
+    if (state.tool && state.cutEdit) { state.cutEdit = false; el.track.classList.remove('cutting'); renderOptions(); }
     document.querySelectorAll('.tool[data-tool]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tool === state.tool)));
     el.app.classList.toggle('drawing', !!state.tool);
     if (state.tool) { state.sel = null; drawAnnos(); }
@@ -1681,6 +1716,7 @@
     }
     if ((e.key === 'Delete' || e.key === 'Backspace') && state.sel) { e.preventDefault(); deleteSelected(); return; }
     if (e.key === 'Escape' && state.cropEdit) { e.preventDefault(); setCropEdit(false); return; }
+    if (e.key === 'Escape' && state.cutEdit) { e.preventDefault(); setCutEdit(false); return; }
     if (e.key === 'Escape' && (state.tool || state.sel)) {
       if (state.tool) setTool(state.tool); else selectAnno(null);
       return;
@@ -1739,7 +1775,8 @@
     hideStageMsg();
     if (state.tool) setTool(state.tool);
     clearAnnos();
-    Object.assign(state, { file: null, info: null, duration: 0, inT: 0, outT: 0, segs: [], cropEdit: false, now: 0, crop: null, mode: 'keep', proxy: false });
+    Object.assign(state, { file: null, info: null, duration: 0, inT: 0, outT: 0, segs: [], cropEdit: false, cutEdit: false, now: 0, crop: null, mode: 'keep', proxy: false });
+    el.track.classList.remove('cutting');
     el.app.dataset.state = 'empty';
     document.querySelectorAll('.fb-center').forEach((n) => { n.inert = true; });
     el.strip.innerHTML = '';

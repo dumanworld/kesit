@@ -475,7 +475,7 @@ body.dragging .drop-hint { display: flex; }
 }
 .track { position: relative; height: 44px; touch-action: none; }
 .strip {
-  position: absolute; inset: 0; cursor: crosshair;
+  position: absolute; inset: 0;
   display: flex; border-radius: 6px; overflow: hidden;
   background: var(--stage);
 }
@@ -502,6 +502,10 @@ body.dragging .drop-hint { display: flex; }
 /* Parçalar: tutulanlar açık, atılan aralıklar soluk; sürüklerken kesilecek / eklenecek aralık önizlenir */
 .segs { position: absolute; inset: 0; pointer-events: none; }
 .segs .handle { pointer-events: auto; }
+.track { cursor: pointer; }
+.track:not(.cutting) .segs .handle { display: none; }
+.track.cutting { cursor: crosshair; }
+.track.cutting .strip { box-shadow: 0 0 0 2px var(--accent-soft); }
 .gap {
   position: absolute; top: 0; bottom: 0; pointer-events: none;
   background: var(--veil);
@@ -517,13 +521,21 @@ body.dragging .drop-hint { display: flex; }
   position: absolute; top: -40px; bottom: -2px; width: 2px; margin-left: -1px;
   background: var(--text); pointer-events: none; z-index: 3;
 }
-.playhead::before {
-  content: ''; position: absolute; top: 7px; left: -7px;
-  width: 16px; height: 16px; border-radius: 50%; background: var(--text);
-  box-shadow: 0 0 0 3px var(--bg);
+/* Oynatma başının üstünde anlık saniye */
+.ph-time {
+  position: absolute; top: 5px; left: 50%; transform: translateX(-50%);
+  padding: 0 7px; border-radius: 10px; background: var(--text); color: var(--bg);
+  font-size: 12px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap;
 }
+/* Tutamaç sürüklenirken yanında başı / sonu */
+.edge-tip {
+  position: absolute; top: 50%; transform: translate(-100%, -50%); margin-left: -16px; z-index: 5;
+  padding: 0 7px; border-radius: var(--r); background: var(--text); color: var(--bg);
+  font-size: 12px; line-height: 20px; font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none;
+}
+.edge-tip.out { transform: translate(0, -50%); margin-left: 16px; }
 .playhead:focus-visible { outline: none; }
-.playhead:focus-visible::before { outline: 2px solid var(--text); outline-offset: 2px; }
+.playhead:focus-visible .ph-time { outline: 2px solid var(--text); outline-offset: 2px; }
 
 .controls { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--s3); margin-top: var(--s3); padding: 0 32px; min-width: 0; }
 .ctl-left { display: flex; align-items: center; min-width: 0; }
@@ -661,7 +673,7 @@ body.dragging .drop-hint { display: flex; }
   .handle { forced-color-adjust: none; background: Highlight; }
   .handle i { background: HighlightText; opacity: 1; }
   .track[data-mode="remove"] .sel { background: none; border: 2px dashed Highlight; }
-  .playhead, .playhead::before { forced-color-adjust: none; background: CanvasText; }
+  .playhead, .ph-time { forced-color-adjust: none; background: CanvasText; color: Canvas; }
   .btn, .time, .iconbtn, .menu, .appmenu, .playbtn, .ratio, .tool, .seg button { border: 1px solid ButtonText; }
   .btn.primary { border-width: 2px; }
   .ratio[aria-checked="true"], .seg button[aria-checked="true"], .tool[aria-pressed="true"] { outline: 2px solid Highlight; outline-offset: -2px; }
