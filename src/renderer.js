@@ -4,6 +4,17 @@
   const G = window.KesitGeometry;
   const $ = (id) => document.getElementById(id);
 
+  // Tema: açık (varsayılan) ya da koyu; Görünüm menüsünden değişir, hatırlanır.
+  let theme = 'light';
+  try { if (localStorage.getItem('kesit.theme') === 'dark') theme = 'dark'; } catch (_) { /* depolama yok */ }
+  const applyTheme = () => { document.documentElement.dataset.theme = theme; };
+  applyTheme();
+  function toggleTheme() {
+    theme = theme === 'dark' ? 'light' : 'dark';
+    applyTheme();
+    try { localStorage.setItem('kesit.theme', theme); } catch (_) { /* depolama yok */ }
+  }
+
   const el = {
     app: $('app'), stage: $('stage'), viewport: $('viewport'), video: $('video'),
     frameLayer: $('frameLayer'), crop: $('crop'), cropLabel: $('cropLabel'),
@@ -181,7 +192,7 @@
 
     el.app.dataset.state = 'loaded';
     document.querySelectorAll('.fb-center').forEach((n) => { n.inert = false; });
-    [el.btnPlay, el.inTime, el.outTime, el.btnFrame, el.btnPreview, el.optResize, ...document.querySelectorAll('.seg button')]
+    [el.btnPlay, el.inTime, el.outTime, el.btnFrame, el.btnPreview, el.optResize, ...document.querySelectorAll('.seg button'), ...TRANSPORT()]
       .forEach((n) => { n.disabled = false; });
     el.tTotal.textContent = fmtTime(r.info.duration);
     $('fHdr').hidden = !r.info.hdr;
@@ -306,6 +317,22 @@
       v.pause();
     }
   }
+  // Oynat'ın yanındaki düğmeler: başa / sona (kesilmiş sonucun başı ve sonu), 5 sn geri / ileri
+  const TRANSPORT = () => ['btnToStart', 'btnBack', 'btnFwd', 'btnToEnd'].map($);
+  function resultStart() {
+    if (state.mode === 'keep') return state.inT;
+    return state.inT < 0.05 ? state.outT : 0;
+  }
+  function resultEnd() {
+    if (state.mode === 'keep') return state.outT;
+    return state.outT >= state.duration - 0.02 ? state.inT : state.duration;
+  }
+  const blurClick = (id, fn) => $(id).addEventListener('click', (e) => { if (e.detail > 0) e.currentTarget.blur(); if (state.info) fn(); });
+  blurClick('btnToStart', () => seekTo(resultStart()));
+  blurClick('btnToEnd', () => { v.pause(); seekTo(resultEnd()); });
+  blurClick('btnBack', () => seekTo(snap(state.now - 5)));
+  blurClick('btnFwd', () => seekTo(snap(state.now + 5)));
+
   // Videodaki konumu, kesilmiş sonuçtaki konuma çevirir (saatte gösterilir).
   function resultTime(t) {
     const { inT, outT } = state;
@@ -1569,7 +1596,7 @@
     el.app.dataset.state = 'empty';
     document.querySelectorAll('.fb-center').forEach((n) => { n.inert = true; });
     el.strip.innerHTML = '';
-    [el.btnPlay, el.inTime, el.outTime, el.btnFrame, el.btnPreview, el.optResize, el.optMute, el.btnExport, el.btnSaveAs, $('btnCopy'),
+    [el.btnPlay, el.inTime, el.outTime, el.btnFrame, el.btnPreview, el.optResize, el.optMute, el.btnExport, el.btnSaveAs, $('btnCopy'), ...TRANSPORT(),
       ...document.querySelectorAll('.seg button')].forEach((n) => { n.disabled = true; });
     el.inTime.value = el.outTime.value = fmtTime(0);
     el.tNow.textContent = el.tTotal.textContent = fmtTime(0);
@@ -1673,6 +1700,8 @@
       { label: 'Yakınlaştır', keys: 'Ctrl +', run: () => api.zoomStep(1) },
       { label: 'Uzaklaştır', keys: 'Ctrl −', run: () => api.zoomStep(-1) },
       { label: 'Gerçek boyut', keys: 'Ctrl 0', run: () => api.zoomStep(0) },
+      '-',
+      { label: 'Koyu tema', check: () => theme === 'dark', run: toggleTheme },
       '-',
       { label: 'Sonucu önizle', keys: 'P', run: previewResult, on: hasFile },
       ...(api.isWindows ? ['-', { label: 'Klasik sağ tık menüsü', check: () => classicMenu, run: toggleClassicMenu }] : [])
