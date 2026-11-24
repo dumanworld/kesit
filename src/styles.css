@@ -358,7 +358,8 @@ body.dragging .drop-hint { display: flex; }
   touch-action: none;
 }
 .crop:focus-visible { outline: 2px solid #fff; outline-offset: 2px; border-radius: 0; }
-.dim { position: absolute; background: var(--scrim); }
+/* Kırpma dışı siyaha değil, videonun arkasındaki zemin rengine doğru solar */
+.dim { position: absolute; background: color-mix(in srgb, var(--stage) 88%, transparent); }
 .third { position: absolute; background: rgba(255, 255, 255, .28); pointer-events: none; opacity: 0; transition: opacity 120ms ease-out; }
 .crop:hover .third, .crop:active .third, .crop.dragging .third { opacity: 1; }
 .third.v1, .third.v2 { top: 0; bottom: 0; width: 1px; }
@@ -720,3 +721,18 @@ body.dragging .drop-hint { display: flex; }
   .toast::before { forced-color-adjust: none; }
   .vsep, .msep { background: CanvasText; }
 }
+
+/* 11. tur: süre ve boyut üstte ortada (pencere başlığı gibi), kırp ve kes altta ortada */
+.fb-title {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  flex-direction: row; align-items: baseline; gap: var(--s3); pointer-events: none;
+}
+.fb-title #tNow { font-size: 14px; }
+.fb-title .summary::before { content: '·'; margin-right: var(--s3); color: var(--text-3); }
+.fb-title .summary:empty::before, .fb-title .summary:not(:has(#sumSize:not(:empty)))::before { content: none; }
+.app[data-state="empty"] .fb-title { visibility: hidden; }
+.ctl-mid .fb-center { display: flex; align-items: center; gap: var(--s1); }
+.ctl-mid .ratiomenu { top: auto; bottom: calc(100% + 6px); }
+.fb-title .summary { gap: 0; }
+.fb-title .summary > :not(:empty) + :not(:empty) { margin-left: var(--s2); }
+.fb-title #sumSize { margin-left: 0; }
