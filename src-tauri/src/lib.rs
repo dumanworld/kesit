@@ -508,24 +508,56 @@ extern "system" {
     fn DwmSetWindowAttribute(hwnd: isize, attr: u32, value: *const std::ffi::c_void, size: u32) -> i32;
 }
 
+// Windows sürüm numarası (Mica yalnız Windows 11'de, derleme 22000 ve sonrası)
+#[cfg(windows)]
+fn windows_build() -> u32 {
+    #[repr(C)]
+    struct OsVersionInfo { size: u32, major: u32, minor: u32, build: u32, platform: u32, csd: [u16; 128] }
+    #[link(name = "ntdll")]
+    extern "system" {
+        fn RtlGetVersion(info: *mut OsVersionInfo) -> i32;
+    }
+    let mut info = OsVersionInfo { size: std::mem::size_of::<OsVersionInfo>() as u32, major: 0, minor: 0, build: 0, platform: 0, csd: [0; 128] };
+    if unsafe { RtlGetVersion(&mut info) } == 0 && info.major >= 10 { info.build } else { 0 }
+}
+
+// Başlık çubuğunu temaya boyar. mica açıksa pencerenin arkasına Windows 11'in Mica zeminini koyar
+// (başlık çubuğu da saydam kalsın diye renk verilmez). Dönen değer: bu Windows Mica'yı destekliyor mu.
 #[tauri::command]
-fn set_titlebar(window: tauri::WebviewWindow, dark: bool, caption: u32, text: u32) -> Result<(), String> {
+fn set_titlebar(window: tauri::WebviewWindow, dark: bool, caption: u32, text: u32, mica: Option<bool>) -> Result<bool, String> {
     #[cfg(windows)]
     {
         const DWMWA_USE_IMMERSIVE_DARK_MODE: u32 = 20;
         const DWMWA_CAPTION_COLOR: u32 = 35;
         const DWMWA_TEXT_COLOR: u32 = 36;
+        const DWMWA_SYSTEMBACKDROP_TYPE: u32 = 38;
+        const DWMWA_MICA_EFFECT: u32 = 1029; // Windows 11 21H2 (belgelenmemiş)
+        const DWMWA_COLOR_DEFAULT: u32 = 0xFFFF_FFFF;
         let hwnd = window.hwnd().map_err(|e| e.to_string())?.0 as isize;
+        let build = windows_build();
+        let supported = build >= 22000;
+        let on = supported && mica.unwrap_or(false);
         let dark_flag: i32 = if dark { 1 } else { 0 };
+        let (caption, text) = if on { (DWMWA_COLOR_DEFAULT, DWMWA_COLOR_DEFAULT) } else { (caption, text) };
         unsafe {
             DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark_flag as *const i32 as *const _, 4);
+            if build >= 22523 {
+                let kind: i32 = if on { 2 } else { 1 }; // 2 = Mica, 1 = yok
+                DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &kind as *const i32 as *const _, 4);
+            } else if supported {
+                let flag: i32 = if on { 1 } else { 0 };
+                DwmSetWindowAttribute(hwnd, DWMWA_MICA_EFFECT, &flag as *const i32 as *const _, 4);
+            }
             DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &caption as *const u32 as *const _, 4);
             DwmSetWindowAttribute(hwnd, DWMWA_TEXT_COLOR, &text as *const u32 as *const _, 4);
         }
+        Ok(supported)
     }
     #[cfg(not(windows))]
-    let _ = (window, dark, caption, text);
-    Ok(())
+    {
+        let _ = (window, dark, caption, text, mica);
+        Ok(false)
+    }
 }
 
 // ---------------- Güncelleme ----------------

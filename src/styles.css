@@ -1124,3 +1124,19 @@ body.dragging .drop-hint { display: flex; }
 .tone[aria-checked="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .colors-reset { align-self: flex-start; margin-top: 4px; padding: 0 8px; }
 .colors-reset { margin-top: 0; }
+
+/* ---------- 30. tur: saydam pencere (Windows 11 Mica, Fotoğraflar uygulamasındaki gibi) ----------
+   Pencerenin arkasındaki Mica zemini görünsün diye pencere zemini boyanmaz; video alanı ve Kırp/Kes kutusu
+   zeminin üstünde hafif koyu bir katman, düğmeler Fluent'teki gibi yarı saydam. Menüler ve iletişim kutuları opak kalır.
+   Sınıf yalnız Mica gerçekten açıldıysa eklenir (Windows 10'da ve ayar kapalıyken görünüm değişmez). */
+:root.mica {
+  --stage-glass: color-mix(in srgb, var(--stage) 55%, transparent);
+  --well: var(--stage-glass);
+  --btn-bg: rgba(255, 255, 255, .7); --btn-bg-hover: rgba(249, 249, 249, .5); --btn-bg-press: rgba(249, 249, 249, .3);
+}
+:root.mica[data-theme="dark"] {
+  --stage-glass: color-mix(in srgb, var(--stage) 70%, transparent);
+  --btn-bg: rgba(255, 255, 255, .06); --btn-bg-hover: rgba(255, 255, 255, .085); --btn-bg-press: rgba(255, 255, 255, .03);
+}
+:root.mica body { background: transparent; }
+:root.mica .stage, :root.mica .strip, :root.mica .app[data-state="empty"] .strip { background: var(--stage-glass); }

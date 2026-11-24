@@ -73,8 +73,21 @@
     applyColors();
     const cs = getComputedStyle(document.documentElement);
     const bg = colorRef(cs.getPropertyValue('--bg')), fg = colorRef(cs.getPropertyValue('--text'));
-    if (api.setTitlebar && bg !== null && fg !== null) api.setTitlebar(theme === 'dark', bg, fg);
+    if (!api.setTitlebar || bg === null || fg === null) return;
+    const ask = micaOn;
+    Promise.resolve(api.setTitlebar(theme === 'dark', bg, fg, ask)).then((ok) => {
+      micaSupported = ok === true;
+      if (ask === micaOn) document.documentElement.classList.toggle('mica', micaSupported && micaOn);
+    });
   };
+  // Saydam pencere (Windows 11 Mica): pencerenin zemini masaüstü renginden hafifçe renk alır. Varsayılan açık.
+  let micaOn = true, micaSupported = false;
+  try { if (localStorage.getItem('kesit.mica') === '0') micaOn = false; } catch (_) { /* depolama yok */ }
+  function toggleMica() {
+    micaOn = !micaOn;
+    try { localStorage.setItem('kesit.mica', micaOn ? '1' : '0'); } catch (_) { /* depolama yok */ }
+    applyTheme();
+  }
   applyTheme();
   function toggleTheme() {
     theme = theme === 'dark' ? 'light' : 'dark';
@@ -2149,6 +2162,7 @@
       '-',
       { label: 'Koyu tema', check: () => theme === 'dark', run: toggleTheme },
       { label: 'Tema renkleri…', run: showColors, hint: 'Vurgu rengi ve zemin tonu' },
+      ...(api.isWindows ? [{ label: 'Saydam pencere', check: () => micaOn && micaSupported, on: () => micaSupported, run: toggleMica, hint: "Pencere zemini masaüstünün renginden hafifçe alır, Fotoğraflar uygulamasındaki gibi (yalnız Windows 11)" }] : []),
       { label: 'Yalnız kırpılan alanı göster', check: () => !!state.cropView, on: () => hasFile() && !!state.crop, run: toggleCropView, hint: 'Kırpılan kısım pencereyi doldurur' },
       '-',
       { label: 'Sonucu önizle', keys: 'P', run: previewResult, on: hasFile },
