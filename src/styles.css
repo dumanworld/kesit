@@ -771,3 +771,11 @@ body.dragging .drop-hint { display: flex; }
 .fb-right .appmenu .am-parent { flex-direction: row-reverse; justify-content: flex-end; }
 .fb-right .appmenu .am-parent svg { transform: scaleX(-1); }
 .timeline.scrubbing .ruler-hover { display: none; }
+
+/* Yalnız kırpılan alan: video büyütülür, taşan kısım kesilir */
+.viewport.crop-focus { overflow: hidden; border-radius: 2px; }
+.viewport.crop-focus video { inset: auto; object-fit: fill; }
+.viewport.crop-focus .dim { display: none; }
+.viewport.crop-focus .crop { outline: 0; box-shadow: none; }
+.crop-bar .dropbtn.iconly { width: 32px; padding: 0; justify-content: center; }
+.crop-bar .dropbtn.iconly.active { background: var(--accent-soft); color: var(--accent); }

@@ -781,13 +781,35 @@
     if (!state.info) { el.frameLayer.hidden = true; return; }
     const W = el.viewport.clientWidth, H = el.viewport.clientHeight;
     const { va } = videoDims();
-    let w, h;
-    if (W / H > va) { h = H; w = h * va; } else { w = W; h = w / va; }
+    let w, h, left, top;
+    // "Yalnız kırpılan alan": kırpma varken ve düzenlenmiyorken kırpılan kısım pencereyi doldurur
+    const focus = !!(state.cropView && state.crop && !state.cropEdit);
+    if (focus) {
+      const c0 = state.crop;
+      const s = Math.min(W / (c0.w * va), H / c0.h);
+      w = va * s; h = s;
+      left = (W - c0.w * w) / 2 - c0.x * w; top = (H - c0.h * h) / 2 - c0.y * h;
+    } else {
+      if (W / H > va) { h = H; w = h * va; } else { w = W; h = w / va; }
+      left = (W - w) / 2; top = (H - h) / 2;
+    }
+    el.viewport.classList.toggle('crop-focus', focus);
+    if (focus) {
+      const c0 = state.crop, x0 = (W - c0.w * w) / 2, y0 = (H - c0.h * h) / 2;
+      el.viewport.style.clipPath = `inset(${y0}px ${W - x0 - c0.w * w}px ${H - y0 - c0.h * h}px ${x0}px round 2px)`;
+    } else el.viewport.style.clipPath = '';
+    Object.assign(v.style, focus
+      ? { left: `${left}px`, top: `${top}px`, width: `${w}px`, height: `${h}px` }
+      : { left: '', top: '', width: '', height: '' });
     Object.assign(el.frameLayer.style, {
-      left: `${(W - w) / 2}px`, top: `${(H - h) / 2}px`, width: `${w}px`, height: `${h}px`
+      left: `${left}px`, top: `${top}px`, width: `${w}px`, height: `${h}px`
     });
     el.frameLayer.hidden = false;
-    positionAnno((W - w) / 2, (H - h) / 2, w, h);
+    positionAnno(left, top, w, h);
+    const cv = $('btnCropView');
+    cv.hidden = !state.crop;
+    cv.setAttribute('aria-pressed', String(!!state.cropView));
+    cv.classList.toggle('active', !!state.cropView);
     // Kırp düğmesi yalnızca düzenlemeyi açar: açıkken tutamaçlar ve ızgara görünür.
     // Kapalıyken kırpma (varsa) karartmayla gösterilir ama çerçeve tıklamaları videoya bırakır.
     const ghost = !state.crop;
@@ -974,6 +996,13 @@
   }
   dwellReveal($('viewport'), $('stage'), $('cropBar'));
   dwellReveal(el.track, document.querySelector('.transport'), $('cutBar'));
+  function toggleCropView() {
+    state.cropView = !state.cropView;
+    try { localStorage.setItem('kesit.cropView', state.cropView ? '1' : '0'); } catch {}
+    layoutFrame();
+  }
+  try { state.cropView = localStorage.getItem('kesit.cropView') === '1'; } catch {}
+  $('btnCropView').addEventListener('click', (e) => { if (e.detail > 0) e.currentTarget.blur(); toggleCropView(); });
   function setCropEdit(on) {
     on = !!on && !!state.info;
     if (state.cropEdit === on) return;
@@ -1917,6 +1946,7 @@
       { label: 'Gerçek boyut', keys: 'Ctrl 0', run: () => api.zoomStep(0) },
       '-',
       { label: 'Koyu tema', check: () => theme === 'dark', run: toggleTheme },
+      { label: 'Yalnız kırpılan alanı göster', check: () => !!state.cropView, on: () => hasFile() && !!state.crop, run: toggleCropView, hint: 'Kırpılan kısım pencereyi doldurur' },
       '-',
       { label: 'Sonucu önizle', keys: 'P', run: previewResult, on: hasFile },
       ...(api.isWindows ? ['-', { label: 'Klasik sağ tık menüsü', check: () => classicMenu, run: toggleClassicMenu }] : [])
