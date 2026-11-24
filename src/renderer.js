@@ -550,6 +550,27 @@
     }
     el.ruler.replaceChildren(frag, $('rulerHover'));
   }
+  const SAVE_MODES = {
+    version: { item: 'btnSaveVersion', run: () => doExport('version'), title: 'Yeni dosya olarak kaydet: aynı klasöre, orijinal değişmez (Ctrl S)' },
+    overwrite: { item: 'btnOverwrite', run: () => doExport(true), title: 'Orijinalin üstüne kaydet: kaydettikten hemen sonra geri alınabilir' },
+    saveas: { item: 'btnSaveAs', run: () => doExport(false), title: 'Farklı kaydet: yeri ve adı sen seç (Ctrl Shift S)' }
+  };
+  let saveMode = 'version';
+  try { const m = localStorage.getItem('kesit.saveMode'); if (SAVE_MODES[m]) saveMode = m; } catch (_) { /* depolama yok */ }
+  function setSaveMode(m) {
+    if (!SAVE_MODES[m]) return;
+    saveMode = m;
+    try { localStorage.setItem('kesit.saveMode', m); } catch (_) { /* depolama yok */ }
+    renderSaveMode();
+    renderSummary();
+  }
+  function renderSaveMode() {
+    const ico = document.querySelector(`#${SAVE_MODES[saveMode].item} .mi-ico`);
+    $('btnExportIcon').replaceChildren(ico ? ico.cloneNode(true) : '');
+    el.btnExport.title = SAVE_MODES[saveMode].title;
+    Object.entries(SAVE_MODES).forEach(([k, m]) => $(m.item).classList.toggle('current', k === saveMode));
+  }
+  renderSaveMode();
   function renderSummary() {
     if (!state.info) return;
     const q = effectiveQuality();
@@ -559,7 +580,7 @@
     const vf = G.videoFilter({ info: state.info, crop: state.crop, resize: state.resize });
     el.sumSize.textContent = `${vf.outW}×${vf.outH}`;
     const edits = hasEdits();
-    el.btnExport.disabled = dur < 0.05 || !edits;
+    el.btnExport.disabled = dur < 0.05 || (saveMode !== 'saveas' && !edits);
     $('btnExportLabel').textContent = 'Kaydet';
     $('sumState').textContent = edits ? '' : 'Değişiklik yok';
     el.btnSaveAs.disabled = dur < 0.05;
@@ -1727,8 +1748,9 @@
   onClick($('btnOpen2'), openDialog);
   onClick(el.btnPlay, togglePlay);
   onClick(el.btnPreview, () => { closeMenu(); previewResult(); });
-  onClick(el.btnExport, () => doExport('version'));
-  onClick(el.btnSaveAs, () => doExport(false));
+  // Kaydet düğmesi menüde en son seçilen kaydetme biçimini yapar ve onun simgesini gösterir.
+  onClick(el.btnExport, () => SAVE_MODES[saveMode].run());
+  onClick(el.btnSaveAs, () => { setSaveMode('saveas'); doExport(false); });
   // Kaydet'in yanındaki ok: yeni dosya / orijinalin üstüne / farklı kaydet
   const saveMenu = $('saveMenu'), btnSaveMenu = $('btnSaveMenu');
   function openSaveMenu(focus) {
@@ -1764,8 +1786,8 @@
     if (!saveMenu.hidden) { e.preventDefault(); e.stopPropagation(); closeSaveMenu(false); }
     else if (!ratioMenu.hidden) { e.preventDefault(); e.stopPropagation(); closeRatioMenu(false); }
   }, true);
-  onClick($('btnSaveVersion'), () => doExport('version'));
-  onClick($('btnOverwrite'), () => doExport(true));
+  onClick($('btnSaveVersion'), () => { setSaveMode('version'); doExport('version'); });
+  onClick($('btnOverwrite'), () => { setSaveMode('overwrite'); doExport(true); });
   onClick(el.btnFrame, () => { closeMenu(); saveFrame(); });
   document.querySelectorAll('.ratio').forEach((b) => b.addEventListener('mouseup', () => b.blur()));
   document.querySelectorAll('.mcheck').forEach((l) => l.addEventListener('mouseup', () => setTimeout(() => document.activeElement && document.activeElement.blur(), 0)));

@@ -1074,3 +1074,15 @@ body.dragging .drop-hint { display: flex; }
 
 /* Sol kesme tutamacı da sağdaki gibi parçanın kenarından içeri açılır */
 .segs .handle.in, .segs .handle.out { transform-origin: 0 50%; }
+
+/* ---------- 28. tur ---------- */
+/* Kırpma varken ama kırpma modu kapalıyken Kırp düğmesi nötr kalır (mavi yalnız mod açıkken) */
+.tbtn.cropped:not(.active), .edit-dock .tbtn.cropped:not(.active), .dropbtn.cropped:not(.active) { color: var(--text); }
+/* Kaydet: seçili kaydetme biçiminin simgesi yazının solunda */
+#btnExport { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+#btnExport .save-ico { display: inline-flex; }
+#btnExport .save-ico svg { width: 16px; height: 16px; color: currentColor; }
+.save-menu .mitem.two:first-child .mi-ico { color: var(--text-2); }
+.save-menu .mitem.two.current .mi-ico { color: var(--accent); }
+.save-menu .mitem.two.current b { font-weight: 600; }
+.save-menu .mitem.two:disabled .mi-ico { color: var(--text-disabled); }
