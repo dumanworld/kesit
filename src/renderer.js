@@ -7,7 +7,19 @@
   // Tema: açık (varsayılan) ya da koyu; Görünüm menüsünden değişir, hatırlanır.
   let theme = 'light';
   try { if (localStorage.getItem('kesit.theme') === 'dark') theme = 'dark'; } catch (_) { /* depolama yok */ }
-  const applyTheme = () => { document.documentElement.dataset.theme = theme; };
+  // Windows başlık çubuğu da aynı renge boyanır (--bg zemin, --text yazı)
+  const colorRef = (css) => {
+    const m = /^#([0-9a-f]{6})$/i.exec(css.trim());
+    if (!m) return null;
+    const n = parseInt(m[1], 16);
+    return ((n & 0xff) << 16) | (n & 0xff00) | ((n >> 16) & 0xff); // 0x00BBGGRR
+  };
+  const applyTheme = () => {
+    document.documentElement.dataset.theme = theme;
+    const cs = getComputedStyle(document.documentElement);
+    const bg = colorRef(cs.getPropertyValue('--bg')), fg = colorRef(cs.getPropertyValue('--text'));
+    if (api.setTitlebar && bg !== null && fg !== null) api.setTitlebar(theme === 'dark', bg, fg);
+  };
   applyTheme();
   function toggleTheme() {
     theme = theme === 'dark' ? 'light' : 'dark';

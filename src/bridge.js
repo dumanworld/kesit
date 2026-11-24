@@ -374,6 +374,8 @@
     onZoomChanged: on('zoom-changed'),
     getZoom: async () => { await settingsReady; return settings.zoom || 1; },
     zoomStep: async (step) => { await settingsReady; return applyZoom(step === 0 ? 1 : (settings.zoom || 1) + step * 0.1, true); },
+    // Windows başlık çubuğunu temaya uydurur (renkler 0x00BBGGRR)
+    setTitlebar: (dark, caption, text) => invoke('set_titlebar', { dark, caption, text }).catch(() => {}),
     onExportProgress: on('export-progress'),
     onProxyProgress: on('proxy-progress')
   };

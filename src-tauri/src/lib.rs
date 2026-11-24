@@ -498,6 +498,36 @@ fn set_zoom(window: tauri::WebviewWindow, zoom: f64) -> Result<(), String> {
     window.set_zoom(zoom).map_err(|e| e.to_string())
 }
 
+// ---------------- Başlık çubuğu (Windows 11) ----------------
+// Pencerenin Windows başlık çubuğunu uygulamanın temasına uydurur: zemin, yazı ve düğmeler aynı renkte olur.
+// Windows 10'da renk ayarı yok sayılır, yalnızca koyu/açık seçimi uygulanır.
+
+#[cfg(windows)]
+#[link(name = "dwmapi")]
+extern "system" {
+    fn DwmSetWindowAttribute(hwnd: isize, attr: u32, value: *const std::ffi::c_void, size: u32) -> i32;
+}
+
+#[tauri::command]
+fn set_titlebar(window: tauri::WebviewWindow, dark: bool, caption: u32, text: u32) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        const DWMWA_USE_IMMERSIVE_DARK_MODE: u32 = 20;
+        const DWMWA_CAPTION_COLOR: u32 = 35;
+        const DWMWA_TEXT_COLOR: u32 = 36;
+        let hwnd = window.hwnd().map_err(|e| e.to_string())?.0 as isize;
+        let dark_flag: i32 = if dark { 1 } else { 0 };
+        unsafe {
+            DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark_flag as *const i32 as *const _, 4);
+            DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &caption as *const u32 as *const _, 4);
+            DwmSetWindowAttribute(hwnd, DWMWA_TEXT_COLOR, &text as *const u32 as *const _, 4);
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = (window, dark, caption, text);
+    Ok(())
+}
+
 // ---------------- Güncelleme ----------------
 // GitHub'daki son sürümün latest.json dosyasına bakar; imzası doğrulanan kurulumu indirip çalıştırır.
 
@@ -730,7 +760,7 @@ pub fn run() {
             trash_item, set_hidden, reveal, open_path, open_url,
             clipboard_target, clipboard_copy_file, classic_menu_get, classic_menu_set, restart_explorer,
             initial_file, pick_video, pick_image, pick_save, update_check, update_install,
-            get_settings, set_settings, set_zoom, selftest_report
+            get_settings, set_settings, set_zoom, set_titlebar, selftest_report
         ])
         .build(tauri::generate_context!())
         .expect("Kesit başlatılamadı")
