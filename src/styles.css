@@ -722,35 +722,7 @@ body.dragging .drop-hint { display: flex; }
   .vsep, .msep { background: CanvasText; }
 }
 
-/* Sol üstte Kırp ve Kes düğmeleri (menü sağ üstte) */
-.fb-left > .fb-center { gap: var(--s2); margin-left: var(--s2); }
-.fb-left #btnCrop, .fb-left #btnCut { min-width: 96px; justify-content: center; padding: 0 var(--s4); }
-.fb-left .dropbtn:not(.chevbtn) {
-  border: 1px solid var(--border); border-bottom-color: var(--border-strong); background: var(--surface);
-}
-.fb-left .dropbtn:hover { background: var(--btn-hover); }
-.fb-left .dropbtn.active:not(.chevbtn) { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
-
-/* Kırp'a basınca oranlar yana doğru kayarak, sırayla açılır */
-.fb-left .ratio-wrap { gap: 4px; }
-.fb-left .ratiomenu {
-  position: static; display: flex; flex-direction: row; align-items: center; gap: 2px; width: auto;
-  padding: 0; background: none; border: 0; box-shadow: none;
-}
-.fb-left .ratiomenu[hidden] { display: none; }
-.fb-left .ratiomenu .ratio { width: auto; height: 28px; padding: 0 8px; gap: 6px; grid-template-columns: auto auto; white-space: nowrap; border-radius: var(--r); }
-.fb-left .ratiomenu .ratio:hover { background: var(--hover); }
-.fb-left .ratiomenu .msep { width: 1px; height: 16px; margin: 0 4px; background: var(--border); }
-.fb-left .ratiomenu .mitem { width: auto; height: 28px; padding: 0 8px; white-space: nowrap; }
-@keyframes ratio-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
-.fb-left .ratiomenu:not([hidden]) > * { animation: ratio-in .22s cubic-bezier(.2, .8, .2, 1) both; }
-.fb-left .ratiomenu > :nth-child(2) { animation-delay: 25ms; }
-.fb-left .ratiomenu > :nth-child(3) { animation-delay: 50ms; }
-.fb-left .ratiomenu > :nth-child(4) { animation-delay: 75ms; }
-.fb-left .ratiomenu > :nth-child(5) { animation-delay: 100ms; }
-.fb-left .ratiomenu > :nth-child(6) { animation-delay: 125ms; }
-.fb-left .ratiomenu > :nth-child(n+7) { animation-delay: 150ms; }
-@media (prefers-reduced-motion: reduce) { .fb-left .ratiomenu > * { transition: none; animation: none; } }
+.fb-left > .fb-center { gap: var(--s1); margin-left: var(--s2); }
 
 .timeline.scrubbing .ruler-hover { display: none; }
 
@@ -759,8 +731,6 @@ body.dragging .drop-hint { display: flex; }
 .viewport.crop-focus video { inset: auto; object-fit: fill; }
 .viewport.crop-focus .dim { display: none; }
 .viewport.crop-focus .crop { outline: 0; box-shadow: none; }
-.fb-left .dropbtn.iconly { width: 32px; padding: 0; justify-content: center; }
-.fb-left .dropbtn.iconly.active { background: var(--accent-soft); color: var(--accent); }
 
 /* Fare videonun üstündeyken kırpma tutamaçları görünür (kırpma açılmadan); tutulunca kırpma açılır */
 .crop.locked.peek .edge, .crop.locked.peek .corner { display: block; pointer-events: auto !important; }
@@ -784,7 +754,7 @@ body.dragging .drop-hint { display: flex; }
   --acc-stroke: rgba(255, 255, 255, .14); --acc-stroke-bottom: rgba(0, 0, 0, .35);
 }
 
-.btn, .fb-left .dropbtn:not(.chevbtn) {
+.btn, .tbtn {
   height: 32px; border-radius: var(--r-btn);
   background: var(--btn-bg); color: var(--text);
   border: 1px solid var(--btn-stroke); border-bottom-color: var(--btn-stroke-bottom);
@@ -792,8 +762,8 @@ body.dragging .drop-hint { display: flex; }
   font-size: 13px; font-weight: 500;
   transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, transform 80ms ease;
 }
-.btn:hover:not(:disabled), .fb-left .dropbtn:not(.chevbtn):hover { background: var(--btn-bg-hover); }
-.btn:active:not(:disabled), .fb-left .dropbtn:not(.chevbtn):active {
+.btn:hover:not(:disabled), .tbtn:hover { background: var(--btn-bg-hover); }
+.btn:active:not(:disabled), .tbtn:active {
   background: var(--btn-bg-press); color: var(--text-2);
   border-bottom-color: var(--btn-stroke); box-shadow: none;
 }
@@ -811,16 +781,15 @@ body.dragging .drop-hint { display: flex; }
 .btn.primary:disabled { background: var(--disabled-fill); color: var(--bg); border-color: transparent; }
 
 /* Kırp / Kes: simge + yazı, açıkken mavi dolgu yerine yumuşak mavi zemin ve mavi çizgi */
-.fb-left #btnCrop, .fb-left #btnCut { min-width: 104px; padding: 0 16px; gap: 8px; }
-.fb-left .dropbtn svg { width: 16px; height: 16px; }
-.fb-left .dropbtn.active:not(.chevbtn), .fb-left .dropbtn[aria-pressed="true"]:not(.chevbtn) {
+#btnCrop, #btnCut { min-width: 104px; padding: 0 16px; gap: 8px; justify-content: center; }
+.tbtn svg { width: 16px; height: 16px; }
+.tbtn.active, .tbtn[aria-pressed="true"] {
   background: var(--accent-soft); color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 35%, transparent);
   border-bottom-color: color-mix(in srgb, var(--accent) 70%, transparent);
   box-shadow: none;
 }
-.fb-left .dropbtn.cropped:not(.active) { color: var(--accent); }
-.fb-left .dropbtn.iconly { width: 32px; min-width: 0; padding: 0; justify-content: center; }
+.tbtn.cropped:not(.active) { color: var(--accent); }
 
 /* Kaydet + kopyala: tek gövde */
 .split { border-radius: var(--r-btn); box-shadow: var(--btn-shadow); }
@@ -838,3 +807,40 @@ body.dragging .drop-hint { display: flex; }
 
 /* Simge düğmeleri: aynı köşe yuvarlaklığı */
 .iconbtn, .fb-right .tool { border-radius: var(--r-btn); }
+
+/* 21. tur: Kırp + (kırparken) oran oku tek gövde; yanında hep duran "yalnız kırpılan alan" simgesi */
+.ratio-wrap { gap: 0; }
+.ratio-wrap #btnRatio.tbtn { width: 28px; min-width: 0; padding: 0; justify-content: center; margin-left: 0; }
+.ratio-wrap #btnRatio .chev { width: 12px; height: 12px; color: currentColor; }
+.ratio-wrap:has(#btnRatio:not([hidden])) #btnCrop { border-radius: var(--r-btn) 0 0 var(--r-btn); border-right-width: 0; }
+.ratio-wrap #btnRatio:not([hidden]) { border-radius: 0 var(--r-btn) var(--r-btn) 0; border-left: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); animation: tip-in .15s ease both; }
+.ratio-wrap .ratiomenu { top: calc(100% + 6px); }
+.ratio-wrap .ratiomenu:not([hidden]) { animation: menu-in .14s ease-out both; }
+@keyframes menu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.iconbtn.cropview { color: var(--text); }
+.iconbtn.cropview:disabled { color: var(--text-disabled); }
+.iconbtn.cropview[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.iconbtn.cropview svg { width: 18px; height: 18px; }
+
+/* Kes oynatın yanında */
+.ctl-left #btnCut { margin-right: var(--s1); }
+
+/* Kopyala ayrı, Kaydet'in yanında açılır menü */
+.ctl-right { gap: var(--s2); }
+.ctl-right #btnCopy { width: 32px; min-width: 0; padding: 0; }
+.ctl-right #btnCopy svg { width: 16px; height: 16px; }
+.save-wrap { position: relative; }
+.split #btnSaveMenu { width: 32px; }
+.split #btnSaveMenu .chev { width: 12px; height: 12px; }
+.split:has(#btnExport:disabled) #btnSaveMenu { border-left: 1px solid var(--btn-stroke); }
+.save-menu { right: 0; bottom: calc(100% + 6px); width: 280px; }
+.save-menu:not([hidden]) { animation: save-menu-in .14s ease-out both; }
+@keyframes save-menu-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.mitem.two { height: auto; min-height: 44px; padding: 6px var(--s2); align-items: center; }
+.mitem.two > span:first-child { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.mitem.two b { font-weight: 400; font-size: 13px; }
+.mitem.two small { font-size: 11.5px; color: var(--text-3); }
+.mitem.two:disabled small { color: var(--text-disabled); }
+.save-menu { top: auto; }
+.split:has(#btnExport:disabled) #btnSaveMenu:hover:not(:disabled) { background: var(--btn-bg-hover); }
+.split:has(#btnExport:disabled) #btnSaveMenu:disabled { color: var(--text-disabled); }

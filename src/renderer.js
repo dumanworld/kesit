@@ -538,6 +538,8 @@
     el.btnExport.disabled = dur < 0.05 || !edits;
     $('btnExportLabel').textContent = edits ? 'Kaydet' : 'Değişiklik yok';
     el.btnSaveAs.disabled = dur < 0.05;
+    $('btnSaveMenu').disabled = dur < 0.05;
+    $('btnSaveVersion').disabled = $('btnOverwrite').disabled = dur < 0.05 || !edits;
     const est = estimateSize();
     const tooBig = est > CLIP_MAX;
     $('btnCopy').disabled = dur < 0.05 || tooBig;
@@ -559,7 +561,8 @@
     $('btnCrop').classList.toggle('active', state.cropEdit);
     $('btnCrop').classList.toggle('cropped', cropped && !state.cropEdit);
     $('btnRatio').classList.toggle('active', state.cropEdit);
-    $('ratioMenu').hidden = !(state.cropEdit && state.info); // oranlar yalnız kırparken Kırp'ın yanında görünür
+    $('btnRatio').hidden = !state.cropEdit; // oran oku yalnız kırparken görünür
+    if (!state.cropEdit) closeRatioMenu(false);
     $('btnCrop').setAttribute('aria-pressed', String(state.cropEdit));
     $('btnCrop').title = state.cropEdit ? 'Kırpmayı bitir' : 'Kırp: kırpma çerçevesini düzenle';
     $('btnCut').classList.toggle('active', state.cutEdit);
@@ -806,7 +809,7 @@
     el.frameLayer.hidden = false;
     positionAnno(left, top, w, h);
     const cv = $('btnCropView');
-    cv.hidden = !state.crop;
+    cv.disabled = !state.crop;
     cv.setAttribute('aria-pressed', String(!!state.cropView));
     cv.classList.toggle('active', !!state.cropView);
     // Kırp düğmesi yalnızca düzenlemeyi açar: açıkken tutamaçlar ve ızgara görünür.
@@ -1054,19 +1057,26 @@
   });
   // Kadraj seçici: üstte tek düğme, oranlar tıklayınca açılan menüde
   const ratioMenu = $('ratioMenu'), btnRatio = $('btnRatio');
-  // Açılır ok yok: oranlar kırpma açıkken Kırp düğmesinin yanında satır olarak durur
+  // Oran oku yalnız kırpma açıkken Kırp'ın yanında görünür; oranlar açılır menüde
   function openRatioMenu(focus) {
-    if (focus && !ratioMenu.hidden) (ratioMenu.querySelector('.ratio[aria-checked="true"]') || ratioMenu.querySelector('.ratio')).focus();
+    ratioMenu.hidden = false;
+    btnRatio.setAttribute('aria-expanded', 'true');
+    if (focus) (ratioMenu.querySelector('.ratio[aria-checked="true"]') || ratioMenu.querySelector('.ratio')).focus();
   }
   function closeRatioMenu(returnFocus) {
-    if (returnFocus && ratioMenu.contains(document.activeElement)) $('btnCrop').focus();
+    if (ratioMenu.hidden) return;
+    ratioMenu.hidden = true;
+    btnRatio.setAttribute('aria-expanded', 'false');
+    if (returnFocus && !btnRatio.hidden) btnRatio.focus();
   }
+  document.addEventListener('pointerdown', (e) => { if (!e.target.closest('.ratio-wrap')) closeRatioMenu(false); });
+  ratioMenu.addEventListener('focusout', (e) => { if (e.relatedTarget && !e.relatedTarget.closest('.ratio-wrap')) closeRatioMenu(false); });
   btnRatio.addEventListener('click', (e) => {
     if (ratioMenu.hidden) openRatioMenu(e.detail === 0); else closeRatioMenu(e.detail === 0);
     if (e.detail > 0) btnRatio.blur();
   });
   ratioMenu.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); $('btnCrop').focus(); setCropEdit(false); return; }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeRatioMenu(true); return; }
     if (['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft'].includes(e.key)) {
       const items = [...ratioMenu.querySelectorAll('button:not([hidden])')];
       const i = items.indexOf(document.activeElement);
@@ -1688,6 +1698,43 @@
   onClick(el.btnPreview, () => { closeMenu(); previewResult(); });
   onClick(el.btnExport, () => doExport('version'));
   onClick(el.btnSaveAs, () => doExport(false));
+  // Kaydet'in yanındaki ok: yeni dosya / orijinalin üstüne / farklı kaydet
+  const saveMenu = $('saveMenu'), btnSaveMenu = $('btnSaveMenu');
+  function openSaveMenu(focus) {
+    saveMenu.hidden = false;
+    btnSaveMenu.setAttribute('aria-expanded', 'true');
+    if (focus) { const f = saveMenu.querySelector('.mitem:not(:disabled)'); if (f) f.focus(); }
+  }
+  function closeSaveMenu(returnFocus) {
+    if (saveMenu.hidden) return;
+    saveMenu.hidden = true;
+    btnSaveMenu.setAttribute('aria-expanded', 'false');
+    if (returnFocus) btnSaveMenu.focus();
+  }
+  btnSaveMenu.addEventListener('click', (e) => {
+    if (saveMenu.hidden) openSaveMenu(e.detail === 0); else closeSaveMenu(e.detail === 0);
+    if (e.detail > 0) btnSaveMenu.blur();
+  });
+  saveMenu.addEventListener('click', (e) => { if (e.target.closest('.mitem')) closeSaveMenu(false); }, true);
+  document.addEventListener('pointerdown', (e) => { if (!e.target.closest('.save-wrap')) closeSaveMenu(false); });
+  saveMenu.addEventListener('keydown', (e) => {
+    const items = [...saveMenu.querySelectorAll('.mitem:not(:disabled)')];
+    const i = items.indexOf(document.activeElement);
+    if (e.key === 'Escape') { e.preventDefault(); closeSaveMenu(true); }
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const n = items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]; if (n) n.focus();
+    } else if (e.key === 'Tab') closeSaveMenu(false);
+    e.stopPropagation();
+  });
+  // Fareyle açılmış menüler Esc ile de kapansın (odak menüde olmasa bile)
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (!saveMenu.hidden) { e.preventDefault(); e.stopPropagation(); closeSaveMenu(false); }
+    else if (!ratioMenu.hidden) { e.preventDefault(); e.stopPropagation(); closeRatioMenu(false); }
+  }, true);
+  onClick($('btnSaveVersion'), () => doExport('version'));
+  onClick($('btnOverwrite'), () => doExport(true));
   onClick(el.btnFrame, () => { closeMenu(); saveFrame(); });
   document.querySelectorAll('.ratio').forEach((b) => b.addEventListener('mouseup', () => b.blur()));
   document.querySelectorAll('.mcheck').forEach((l) => l.addEventListener('mouseup', () => setTimeout(() => document.activeElement && document.activeElement.blur(), 0)));
@@ -1835,7 +1882,7 @@
     el.app.dataset.state = 'empty';
     document.querySelectorAll('.fb-center').forEach((n) => { n.inert = true; });
     el.strip.innerHTML = '';
-    [el.btnPlay, el.inTime, el.outTime, el.btnFrame, el.btnPreview, el.optResize, el.optMute, el.btnExport, el.btnSaveAs, $('btnCopy'), $('btnMute'), ...TRANSPORT(),
+    [el.btnPlay, el.inTime, el.outTime, el.btnFrame, el.btnPreview, el.optResize, el.optMute, el.btnExport, el.btnSaveAs, $('btnSaveMenu'), $('btnCopy'), $('btnMute'), ...TRANSPORT(),
       ...document.querySelectorAll('.seg button')].forEach((n) => { n.disabled = true; });
     el.inTime.value = el.outTime.value = fmtTime(0);
     el.tNow.textContent = el.tTotal.textContent = fmtTime(0);
@@ -1914,6 +1961,7 @@
     { label: 'Dosya', items: [
       { label: 'Video aç…', keys: 'Ctrl O', run: openDialog },
       { label: 'Kaydet', keys: 'Ctrl S', run: () => doExport('version'), on: () => hasFile() && hasEdits() && outputDuration() >= 0.05 },
+      { label: 'Orijinalin üstüne kaydet', run: () => doExport(true), on: () => hasFile() && hasEdits() && outputDuration() >= 0.05 },
       { label: 'Farklı kaydet…', keys: 'Ctrl Shift S', run: () => doExport(false), on: () => hasFile() && outputDuration() >= 0.05 },
       { label: 'Panoya kopyala', keys: 'Ctrl Shift C', run: copyToClipboard, on: () => hasFile() && outputDuration() >= 0.05 && estimateSize() <= CLIP_MAX },
       { label: 'Bu kareyi PNG olarak kaydet…', run: saveFrame, on: hasFile },
