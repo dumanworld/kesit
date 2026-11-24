@@ -84,7 +84,7 @@
   const PROGRESS = ['-progress', 'pipe:1', '-nostats'];
 
   // Dışa aktarma planı: sırayla çalıştırılacak ffmpeg adımları.
-  // opts: { input, output, info, start, end, mode: 'keep'|'remove', quality: 'precise'|'fast',
+  // opts: { input, output, info, segments: [[a, b], …] | (start, end, mode: 'keep'|'remove'), quality: 'precise'|'fast',
   //         crop: null|{x,y,w,h,ratio}, mute, resize, tmpDir }
   function buildExportPlan(opts) {
     const { input, output, info } = opts;
@@ -99,7 +99,18 @@
 
     // Hangi parçalar kalacak?
     let segments;
-    if (opts.mode === 'remove') {
+    if (Array.isArray(opts.segments)) {
+      // Birden çok parça: sırala, sınırla, çakışanları birleştir
+      segments = [];
+      opts.segments
+        .map(([a, b]) => [Math.max(0, Math.min(a, D)), Math.max(0, Math.min(b, D))])
+        .sort((p, q) => p[0] - q[0])
+        .forEach(([a, b]) => {
+          const last = segments[segments.length - 1];
+          if (last && a <= last[1]) last[1] = Math.max(last[1], b);
+          else segments.push([a, b]);
+        });
+    } else if (opts.mode === 'remove') {
       segments = [];
       if (start > EPS) segments.push([0, start]);
       if (D - end > EPS) segments.push([end, D]);
@@ -107,7 +118,7 @@
       segments = [[start, end]];
     }
     segments = segments.filter(([a, b]) => b - a > 0.01);
-    if (!segments.length) throw new Error('Çıktıda kalacak bir bölüm yok. Başlangıç ve bitişi kontrol et.');
+    if (!segments.length) throw new Error('Çıktıda kalacak bir bölüm yok. Film şeridinde en az bir parça bırak.');
 
     const outDuration = segments.reduce((s, [a, b]) => s + (b - a), 0);
     const ext = path.extname(output).toLowerCase();
@@ -129,17 +140,22 @@
         args.push(...encodeArgs(withAudio, info.hdr), ...PROGRESS, output);
         steps.push({ args, duration: b - a, label: 'Kodlanıyor' });
       } else {
-        const [[, a], [b]] = segments; // [0,a] ve [b,D]
-        const args = ['-y', '-hide_banner', '-t', fmt(a), '-i', input, '-ss', fmt(b), '-i', input];
-        if (opts.overlay) args.push('-i', opts.overlay);
-        let fc = '[0:v:0]setpts=PTS-STARTPTS[v0];[1:v:0]setpts=PTS-STARTPTS[v1];';
-        if (withAudio) {
-          fc += '[0:a:0]asetpts=PTS-STARTPTS[a0];[1:a:0]asetpts=PTS-STARTPTS[a1];';
-          fc += '[v0][a0][v1][a1]concat=n=2:v=1:a=1[vc][a];';
-        } else {
-          fc += '[v0][v1]concat=n=2:v=1:a=0[vc];';
+        // Her parça ayrı bir giriş olarak açılır ve concat ile birleştirilir (2 ya da daha çok parça).
+        const n = segments.length;
+        const args = ['-y', '-hide_banner'];
+        for (const [a, b] of segments) {
+          if (a > 0) args.push('-ss', fmt(a));
+          args.push('-t', fmt(b - a), '-i', input);
         }
-        fc += opts.overlay ? overlayGraph('[vc]', '[2:v]', opts) : `[vc]${vf || 'null'}[v]`;
+        if (opts.overlay) args.push('-i', opts.overlay);
+        let fc = '', ins = '';
+        for (let i = 0; i < n; i++) {
+          fc += `[${i}:v:0]setpts=PTS-STARTPTS[v${i}];`;
+          if (withAudio) fc += `[${i}:a:0]asetpts=PTS-STARTPTS[a${i}];`;
+          ins += withAudio ? `[v${i}][a${i}]` : `[v${i}]`;
+        }
+        fc += withAudio ? `${ins}concat=n=${n}:v=1:a=1[vc][a];` : `${ins}concat=n=${n}:v=1:a=0[vc];`;
+        fc += opts.overlay ? overlayGraph('[vc]', `[${n}:v]`, opts) : `[vc]${vf || 'null'}[v]`;
         args.push('-filter_complex', fc, '-map', '[v]');
         if (withAudio) args.push('-map', '[a]');
         args.push(...encodeArgs(withAudio, info.hdr), ...PROGRESS, output);

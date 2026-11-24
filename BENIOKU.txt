@@ -22,8 +22,11 @@ NASIL KULLANILIR
    sürükle ya da kopyaladığın görseli Ctrl+V ile yapıştır: kırmızı çerçeveli
    yuvarlak olarak eklenir. Çizimleri sürükleyerek taşı,
    tutamaçlardan boyutlandır, Delete ya da × ile sil. Kaydederken videoya işlenir.
-4. Üstteki düğme tıkladıkça değişir: "Seçileni tut" yalnızca seçili kısmı
-   bırakır, "Seçileni sil" seçili kısmı silip kalan parçaları birleştirir.
+4. Kesmek için film şeridini kullan: videonun kalan bir kısmında sürüklersen
+   o aralık kesilir, soluk (kesilmiş) bir yerde sürüklersen orası yeniden
+   eklenir. Böylece birden çok parça bırakabilirsin; kaydederken birleşir.
+   Parçaların uçlarındaki tutamaçları sürükleyerek ince ayar yapılır.
+   Üstteki saniye cetvelinde sürükleyerek videoda gezersin.
    Oynat düğmesi videonun kesilmiş hâlini oynatır.
 5. Kaydet (Ctrl+S) orijinal dosyaya dokunmaz; aynı klasöre yeni bir dosya
    yazar (örneğin tatil_kesit.mp4, sonra tatil_kesit_2.mp4). Yeri ve adı

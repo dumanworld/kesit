@@ -228,6 +228,12 @@ input:disabled { opacity: .45; }
 .dropbtn .chev { width: 12px; height: 12px; color: var(--text-2); }
 .dropbtn.active { color: var(--accent); }
 .dropbtn.active .chev { color: currentColor; }
+.ratio-wrap { display: flex; align-items: center; }
+.dropbtn.active:not(.chevbtn) { background: var(--accent-soft); }
+.chevbtn { width: 24px; padding: 0; justify-content: center; margin-left: -2px; }
+#btnMute .i-off, #btnMute.muted .i-on { display: none; }
+#btnMute.muted .i-off { display: block; }
+#btnMute.muted { color: var(--danger); }
 .ratiomenu {
   position: absolute; left: 0; top: calc(100% + 6px); z-index: 10;
   width: 168px; padding: var(--s1);
@@ -437,7 +443,8 @@ body.dragging .drop-hint { display: flex; }
 
 .app[data-state="empty"] .seg button, .app[data-state="empty"] .time { pointer-events: none; }
 
-.ruler { position: relative; height: 12px; margin-bottom: var(--s1); }
+.ruler { position: relative; height: 20px; margin-bottom: 2px; border-radius: var(--r); cursor: pointer; touch-action: none; }
+.ruler:hover { background: var(--hover); }
 .ruler span {
   position: absolute; bottom: 0;
   padding-left: 3px; border-left: 1px solid var(--border-strong);
@@ -446,7 +453,7 @@ body.dragging .drop-hint { display: flex; }
 }
 .track { position: relative; height: 44px; touch-action: none; }
 .strip {
-  position: absolute; inset: 0;
+  position: absolute; inset: 0; cursor: crosshair;
   display: flex; border-radius: 6px; overflow: hidden;
   background: var(--stage);
 }
@@ -470,11 +477,19 @@ body.dragging .drop-hint { display: flex; }
 .handle.out { border-radius: 0 6px 6px 0; }
 .handle:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
 .handle i { width: 2px; height: 16px; background: var(--mark-ink); opacity: .8; border-radius: 1px; }
-.track[data-mode="remove"] { --mark: var(--danger); --mark-ink: var(--danger-ink); }
-.track[data-mode="remove"] .shade { display: none; }
-.track[data-mode="remove"] .sel {
-  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--danger) 40%, transparent) 0 6px, rgba(12, 12, 12, .55) 6px 12px);
+/* Parçalar: tutulanlar açık, atılan aralıklar soluk; sürüklerken kesilecek / eklenecek aralık önizlenir */
+.segs { position: absolute; inset: 0; pointer-events: none; }
+.segs .handle { pointer-events: auto; }
+.gap {
+  position: absolute; top: 0; bottom: 0; pointer-events: none;
+  background: var(--veil);
 }
+.pending { position: absolute; top: -3px; bottom: -3px; pointer-events: none; border-radius: 4px; z-index: 2; }
+.pending.cut {
+  border: 2px solid var(--danger);
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--danger) 45%, transparent) 0 6px, transparent 6px 12px);
+}
+.pending.add { border: 2px dashed var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
 
 .playhead {
   position: absolute; top: -16px; bottom: -2px; width: 2px; margin-left: -1px;

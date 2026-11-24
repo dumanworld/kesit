@@ -90,6 +90,8 @@ async function t(name, fn) {
 
   await run('hassas: tut 2.5–7.0', { input: L, output: o('a.mp4'), info: land, start: 2.5, end: 7, mode: 'keep', quality: 'precise' }, { dur: 4.5, w: 1920, h: 1080, audio: true, codec: 'h264', progress: true });
   await run('hassas: çıkar 3–6 (iki parça birleşir)', { input: L, output: o('b.mp4'), info: land, start: 3, end: 6, mode: 'remove', quality: 'precise' }, { dur: 7, audio: true, progress: true });
+  await run('hassas: üç parça (film şeridinden)', { input: L, output: o('b3.mp4'), info: land, segments: [[6, 7.5], [0.5, 2], [2, 3]], quality: 'precise' }, { dur: 4, audio: true });
+  await run('hızlı: iki parça', { input: L, output: o('b4.mp4'), info: land, segments: [[0, 2], [5, 8]], quality: 'fast' }, { dur: 5, tol: 2.1, fastTol: true });
   await run('hassas: çıkar baştan (tek parça kalır)', { input: L, output: o('b2.mp4'), info: land, start: 0, end: 4, mode: 'remove', quality: 'precise' }, { dur: 6 });
   await run('hassas: 9:16 kırp + sesi kaldır', { input: L, output: o('c.mp4'), info: land, start: 1, end: 3, mode: 'keep', quality: 'precise', mute: true, crop: { x: 0.3, y: 0, w: 0.31640625, h: 1, ratio: 9 / 16 } }, { dur: 2, w: 608, h: 1080, audio: false });
   await run('hassas: çıkar + 4:5 kırp + 1080 ölçek', { input: L, output: o('d.mp4'), info: land, start: 2, end: 4, mode: 'remove', quality: 'precise', resize: true, crop: { x: 0.2, y: 0, w: 0.46875, h: 1, ratio: 4 / 5 } }, { dur: 8, w: 864, h: 1080, audio: true });

@@ -2,7 +2,7 @@
 
 Windows için hızlı video kesme ve kırpma uygulaması. Videoya sağ tıkla, "Kesit ile düzenle" de, başlangıcı ve bitişi işaretle, kenarlardan sürükleyerek kırp, Ctrl+S ile kaydet.
 
-- Kesme: seçili kısmı tut ya da çıkar (kalan parçalar birleştirilir)
+- Kesme: film şeridinde sürükleyerek aralık kes ya da geri ekle; birden çok parça birleştirilerek kaydedilir
 - Kırpma: serbest ya da 9:16, 4:5, 1:1, 16:9
 - Çizim: ok, daire ve görsel (bilgisayardan, sürükle bırak ya da Ctrl+V; kırmızı çerçeveli yuvarlak)
 - Kaydet orijinali değiştirmez, aynı klasöre yeni bir dosya (ad_kesit.mp4) yazar; Farklı kaydet yeri ve adı sorar
